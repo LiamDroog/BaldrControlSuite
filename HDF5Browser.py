@@ -46,11 +46,11 @@ class FileBrowser:
 
         self.entrybar = tk.Entry(master=self.window)
         self.entrybar.configure(width=40)
-        self.entrybar.grid(row=self.grid[1], column=0, columnspan=4, sticky='wn')
+        self.entrybar.grid(row=self.grid[1], column=0, columnspan=6, sticky='new')
 
         self.sendentrybtn = tk.Button(master=self.window, text='Send',
                                       command=lambda: self.__parseCommand(self.entrybar.get()))
-        self.sendentrybtn.grid(row=self.grid[1], column=4, sticky='ew')
+        self.sendentrybtn.grid(row=self.grid[1], column=7, sticky='ew')
 
         self.output = tk.Listbox(master=self.window)
         self.output.grid(columnspan=8, rowspan=self.grid[1], row=0, column=0, sticky='nesw')
@@ -107,6 +107,8 @@ class FileBrowser:
         :return: None
         """
         # parses commands from input box (typed). resets input box to nil
+        if command.strip() == '':
+            return
         self.__sendCommand(command)
         if command[0] != '$':
             try:
@@ -164,7 +166,7 @@ class FileBrowser:
                             self.__help(i[1].strip())
                     else:
                         self.__errmessage()
-                        return
+
             self.entrybar.delete(0, 'end')
 
     def __sendCommand(self, command):
