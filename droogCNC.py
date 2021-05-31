@@ -131,24 +131,24 @@ class TwoAxisStage:
         self.gcode_send.grid(row=4, column=9, sticky='ewn')
         self.gcode_send.configure(width=5)
 
-        # file input box
-        self.file_entry = tk.Entry(master=self.window)
-        self.file_entry.grid(row=4, columnspan=3, sticky='new')
-
-        # file input button
-        self.file_input = tk.Button(master=self.window, text='Get File',
-                                    command=lambda: self.getFile(self.file_entry.get()))
-        self.file_input.grid(row=4, column=3, sticky='new')
+        # # file input box
+        # self.file_entry = tk.Entry(master=self.window)
+        # self.file_entry.grid(row=4, columnspan=3, sticky='new')
+        #
+        # # file input button
+        # self.file_input = tk.Button(master=self.window, text='Get File',
+        #                             command=lambda: self.getFile(self.file_entry.get()))
+        # self.file_input.grid(row=4, column=3, sticky='new')
         #self.file_input.configure(width=self.buttonx, height=self.buttony)
 
-        # file run button
-        self.file_run = tk.Button(master=self.window, text='Run', command=lambda: self.runFile())
-        self.file_run.grid(row=4, column=4, sticky='new')
-        self.file_run.configure(width=self.buttonx)
+        # # file run button
+        # self.file_run = tk.Button(master=self.window, text='Run', command=lambda: self.runFile())
+        # self.file_run.grid(row=4, column=4, sticky='new')
+        # self.file_run.configure(width=self.buttonx)
 
-        self.kill_btn = tk.Button(master=self.window, text='Kill', command=self.killSwitch)
-        self.kill_btn.grid(row=4, column=5, sticky='new')
-        self.kill_btn.configure(width=self.buttonx)
+        # self.kill_btn = tk.Button(master=self.window, text='Kill', command=self.killSwitch)
+        # self.kill_btn.grid(row=4, column=5, sticky='new')
+        # self.kill_btn.configure(width=self.buttonx)
 
         self.increment_btn = tk.Button(master=self.window, text='G91', command=self.setG91)
         self.increment_btn.grid(row=1, column=1, sticky='nsew')
@@ -182,12 +182,10 @@ class TwoAxisStage:
         self.window.bind('<Return>', (lambda x: self.sendCommand(self.gcode_entry.get(), entry=self.gcode_entry,
                                                                  resetarg=True)))
 
-
-
         self.__setTempFile()
         self.setKeybinds()
         self.Refresh()
-        # self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
+        self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.initSerial(self.port, self.baud, self.startupfile)
 
     def start(self):
@@ -198,9 +196,12 @@ class TwoAxisStage:
 
     def __on_closing(self):
         if messagebox.askokcancel("Quit", "Quit?"):
+            self.connected = False
             self.s.close()
+            self.s = None
+            self.queue = None
+            print('Connection closed')
             self.window.destroy()
-
 
     def setKeybinds(self):
         """
@@ -218,6 +219,12 @@ class TwoAxisStage:
         """
         self.lbl_pos.configure(text='X: %1.3f, Y:%1.3f, Feedrate: %d' % (self.pos[0], self.pos[1], self.feedrate))
         self.window.after(5, self.Refresh)
+
+    def isOpen(self):
+        if self.s:
+            return self.s.is_open
+        else:
+            return False
 
     def onKeyPress(self, event, wasd=False):
         """
@@ -384,6 +391,13 @@ class TwoAxisStage:
             self.increment_btn.configure(fg='black')
             self.absolute_btn.configure(fg='green')
 
+    def getPos(self):
+        """
+        returns position of stage
+        :return: position of stage
+        """
+        return self.pos
+
     def setPos(self, cmd):
         """
         sets position of table on DRO
@@ -429,6 +443,10 @@ class TwoAxisStage:
             self.file_entry.delete(0, 'end')
             self.output.insert('end', '\n' + '!> ' + ' File does not exist')
             self.output.yview(tk.END)
+
+    def sendOutput(self, text):
+        self.output.insert('end', text)
+        self.output.yview(tk.END)
 
     def runFile(self):
         """
@@ -534,9 +552,6 @@ class TwoAxisStage:
                     self.parameters[key] = [i.split('=')[0], i.split('=')[1]]
 
         self.feedrate = int(self.parameters['xMaxRate'][1])
-        print(self.feedrate)
-        print(self.parameters['xMaxRate'])
-        print(self.parameters['xMaxAcc'])
 
     def __setTempFile(self):
         """
@@ -599,9 +614,11 @@ class TwoAxisStage:
                             self.queue.enqueue(line)
                 print('Loaded ' + self.filename)
                 self.start_from_death_btn.configure(text='Start?', fg='green', command=self.runFile)
-            except FileNotFoundError:
-                self.file_entry.delete(0, 'end')
-                self.file_entry.insert(0, 'File does not exist')
+            except:
+                return
+            # except FileNotFoundError:
+                # self.file_entry.delete(0, 'end')
+                # self.file_entry.insert(0, 'File does not exist')
         else:
             self.start_from_death_btn.configure(text='Not\nconnected')
             self.window.after(5000, lambda: self.start_from_death_btn.configure(text='Load\nData?'))
