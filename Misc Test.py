@@ -3,11 +3,128 @@ import h5py
 import time
 from droogCNC import HDF5File
 import HDF5Methods as h5m
+from datetime import date
+import os
+import PySpin
+from FLIRTrigger import BFSTrigger
+from FLIRLib import BFSCam
+import tkinter as tk
+from tkinter import ttk
 
-open('Config/startup.txt')
+root = tk.Tk()
+root.title("Tab Widget")
+tabControl = ttk.Notebook(root)
 
-import matplotlib.pyplot as plt
-import pandas as pd
+tab1 = ttk.Frame(tabControl)
+tab2 = ttk.Frame(tabControl)
+
+tabControl.add(tab1, text='Tab 1')
+tabControl.add(tab2, text='Tab 2')
+tabControl.pack(expand=1, fill="both")
+
+ttk.Label(tab1,
+          text="Welcome to GeeksForGeeks").grid(column=0,
+                               row=0,
+                               padx=30,
+                               pady=30)
+ttk.Label(tab2,
+          text="Lets dive into the world of computers").grid(column=0,
+                                    row=0,
+                                    padx=30,
+                                    pady=30)
+
+root.mainloop()
+# bfs = BFSTrigger()
+# bfs.cam.Init()
+# st = time.time()
+# bfs.getDeviceParams()
+# print(bfs.CamProperties)
+# print(time.time() - st)
+# bfs.cam.DeInit()
+# system = PySpin.System_GetInstance()
+# cam = system.GetCameras()[0]
+# cam.Init()
+# st = time.time()
+# #print('Time to init: %f seconds' % (time.time() - st))
+# if cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
+#     print('Device serial number: %s' % cam.TLDevice.DeviceSerialNumber.ToString())
+#
+# # Print device display name
+# if PySpin.IsReadable(cam.TLDevice.DeviceDisplayName):
+#     print('Device display name: %s' % cam.TLDevice.DeviceDisplayName.ToString())
+#
+# print('Time to print Device serial info: %f seconds' % (time.time() - st))
+#
+#
+# if cam.ExposureTime.GetAccessMode() == PySpin.RO or cam.ExposureTime.GetAccessMode() == PySpin.RW:
+#         print('Exposure time: %s' % cam.ExposureTime.ToString())
+# else:
+#     print('Exposure time: unavailable')
+#     result = False
+#
+# # Print black level
+# if PySpin.IsReadable(cam.BlackLevel):
+#     print('Black level: %s' % cam.BlackLevel.ToString())
+# else:
+#     print('Black level: unavailable')
+#     result = False
+#
+# # Print height
+# if PySpin.IsReadable(cam.Height):
+#     print('Height: %s' % cam.Height.ToString())
+# else:
+#     print('Height: unavailable')
+#     result = False
+#
+# if PySpin.IsReadable(cam.Gain):
+#     print('Gain: %s' % cam.Gain.ToString())
+# else:
+#     print('gain: unavailable')
+#     result = False
+#
+# if PySpin.IsReadable(cam.Gamma):
+#     print('Gamma: %s' % cam.Gamma.ToString())
+# else:
+#     print('Height: unavailable')
+#     result = False
+# print('Time to print Device params: %f seconds' % (time.time() - st))
+#
+# cam.DeInit()
+# print('Time to deinit(): %f seconds' % (time.time() - st))
+
+
+# st = time.time()
+# system = PySpin.System.GetInstance()
+# cam = system.GetCameras()[0]
+# bfs = BFSCam(cam)
+# bfs.liveOut()
+# print('Took %f  seconds' % (time.time()-st))
+
+
+# today = date.today()
+# owd = os.getcwd()
+# h5filepath = 'datafiles/'+today.strftime("%b-%d-%Y")
+# os.chdir(h5filepath)
+# # for i in range(10):
+# #     h5m.createFile('shot' + '0'*(4-len(str(i+1))) + str(i+1) + '.hdf5')
+# dirs = os.listdir()
+# dirs.sort(reverse=True)
+# lastfile = dirs[0]
+# lf1 = lastfile[:-5].split('shot')[1]
+# for i in range(len(str(lf1))):
+#     if lf1[i] != '0':
+#         filenum = lf1[i:]
+#         break
+#
+# print(filenum)
+#
+#
+#
+
+# open('Config/startup.txt')
+
+
+
 
 # plt.rc('font', size=16)          # controls default text sizes
 # plt.rc('axes', titlesize=20)     # fontsize of the axes title
@@ -138,3 +255,4 @@ import pandas as pd
 # '''
 # Sent: G0 X11.749503648982355 Y7.113395302280427
 # '''
+

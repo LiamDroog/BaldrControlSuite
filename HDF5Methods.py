@@ -35,6 +35,22 @@ def setMetadata(filename, attribute, value, path='/'):
         h5f[path].attrs[attribute] = value
 
 
+def setMetadataFromDict(filename, dict, path='/'):
+    """
+    Sets metadata of a specified hdf5 file or group/dataset within from keys/values
+    of input dictionary
+
+    :param filename: Name of target file, string
+    :param attribute: Metadata attribute, string
+    :param value: Value corresponding to attribute, string
+    :param dict: Dictionary containing metadata
+    :param path: Path to desired group/dataset ('/' is parent file)
+    :return: None
+    """
+    with h5py.File(filename, mode='a') as h5f:
+        for key, val in dict.items():
+            h5f[path].attrs[key] = val
+
 def createGroup(filename, groupname):
     """
     Creates group within given hdf5 file

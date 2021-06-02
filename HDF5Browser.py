@@ -3,6 +3,7 @@ import HDF5Methods as h5m
 import os
 import tkinter as tk
 import time
+from ImageViewer import ImageFrame
 
 
 class FileBrowser:
@@ -41,7 +42,7 @@ class FileBrowser:
         self.outpadlen = 6
         self.anchorPos = [0, 5]
         self.help_dict = {}
-
+        self.owd = os.getcwd()
         self.errmessage = 'Command not found. Try $help'
 
         self.entrybar = tk.Entry(master=self.window)
@@ -49,13 +50,13 @@ class FileBrowser:
         self.entrybar.grid(row=self.grid[1], column=0, columnspan=6, sticky='new')
 
         self.sendentrybtn = tk.Button(master=self.window, text='Send',
-                                      command=lambda: self.__parseCommand(self.entrybar.get()))
+                                      command=lambda: self.parseCommand(self.entrybar.get()))
         self.sendentrybtn.grid(row=self.grid[1], column=7, sticky='ew')
 
         self.output = tk.Listbox(master=self.window)
         self.output.grid(columnspan=8, rowspan=self.grid[1], row=0, column=0, sticky='nesw')
         self.output.configure(bg='white')
-        self.window.bind('<Return>', (lambda x: self.__parseCommand(self.entrybar.get())))
+        self.window.bind('<Return>', (lambda x: self.parseCommand(self.entrybar.get())))
 
         self.scrollbar = tk.Scrollbar(master=self.window)
         self.scrollbar.grid(column=8, row=0, rowspan=self.grid[1], sticky='nsw')
@@ -83,6 +84,9 @@ class FileBrowser:
         self.__sendOutput(time.asctime(), head='>> ')
         self.__sendOutput('Written by Liam Droog', head='>> ')
         self.__sendOutput("HDF5 Methods Initialized", head='>> ')
+        self.window.protocol("WM_DELETE_WINDOW", self.__onClose)
+        self.window.geometry('800x400+%d+%d' % (self.window.winfo_screenwidth()/4 + 810,
+                                                self.window.winfo_screenheight()/5 + 440))
 
     def start(self):
         """
@@ -99,7 +103,49 @@ class FileBrowser:
             raise FileNotFoundError
         else:
             return r
-    def __parseCommand(self, command):
+
+    def __getImage(self):
+        try:
+            image = h5m.getData(self.currentfile, 'BFSimage')
+            ImageFrame('', image=image)
+        except:
+            self.__sendOutput('File does not have an image')
+
+    def __getDirImages(self):
+        dirs = os.listdir()
+        if dirs == []:
+            self.__sendOutput('No images found')
+            return
+        else:
+            for i in range(len(dirs)):
+                if dirs[i][-5:] != '.hdf5':
+                    dirs.pop(i)
+        if dirs == []:
+            self.__sendOutput('No images found')
+            return
+        imageviewer = None
+        for i in range(len(dirs)):
+            try:
+                image = h5m.getData(dirs[i], 'BFSimage')
+                imageviewer = ImageFrame('', image=image)
+            except:
+                pass
+            else:
+                break
+
+        if not imageviewer:
+            self.__sendOutput('No pictures found')
+            return
+
+        for j in range(i, len(dirs)):
+            imageviewer.addImage(h5m.getData(dirs[i], 'BFSimage'))
+        print(imageviewer.getsize())
+
+    def __onClose(self):
+        os.chdir(self.owd)
+        self.window.destroy()
+
+    def parseCommand(self, command):
         """
         Parses command typed from input location. Resets text in input box after completion.
 
@@ -136,9 +182,9 @@ class FileBrowser:
             else:
                 if i.strip() != '':
                     i = i.lower().strip().split(' ')
-                    if i[0] == 'getfile':
+                    if i[0] == 'get':
                         self.__getFile(i[1])
-                    elif i[0] == 'createfile':
+                    elif i[0] == 'create':
                         self.__createFile(i[1])
                     elif i[0] == 'setmetadata':
                         self.__setMetadata(' '.join(j for j in i[1:]))
@@ -164,6 +210,10 @@ class FileBrowser:
                             self.__help()
                         else:
                             self.__help(i[1].strip())
+                    elif i[0] == 'getimage':
+                        self.__getImage()
+                    elif i[0] == 'getdirimages':
+                        self.__getDirImages()
                     else:
                         self.__errmessage()
 
@@ -288,7 +338,7 @@ class FileBrowser:
         :param filename: filename or path to target file, string
         :return: None
         """
-        if filename.split('.')[-1].lower() not in ['.hdf5', '.h5', '.he5']:
+        if filename.split('.')[-1].lower() not in ['hdf5', 'h5', 'he5']:
             self.__sendOutput('Invalid file format, must have extension [.hdf5, .h5, .he5]', head=' ' * self.outpadlen)
             return
 
@@ -404,10 +454,10 @@ class FileBrowser:
         """
         try:
             self.__sendOutput('/' + name, head='')
-            n = 5
-            self.__sendOutput('Shape: ' + str(obj.shape), head=' ')
-            self.__sendOutput('Type: ' + str(obj.dtype), head=' ')
-            self.__sendOutput('Compression: ' + str(obj.compression), head=' ')
+            n = 9
+            self.__sendOutput('    Shape: ' + str(obj.shape), head=' ')
+            self.__sendOutput('    Type: ' + str(obj.dtype), head=' ')
+            self.__sendOutput('    Compression: ' + str(obj.compression), head=' ')
             self.__sendOutput(' ' * n + 'Metadata:', head='')
             for key, val in obj.attrs.items():
                 self.__sendOutput(' ' * n + "%s: %s" % (key, val), head='')

@@ -56,6 +56,8 @@ class BFSCam:
             plt.pause(0.001)
             plt.clf()
             image.Release()
+            if keyboard.is_pressed('Enter'):
+                self.stopLiveOut()
 
     def liveOut_withLineout(self):
         # needs optimixation yo

@@ -24,16 +24,3 @@ $121=130
 g21 g90
 ; set zeros
 g92 x0 y0
-
-I s
-DeviceDisplayName	FLIR Blackfly S BFS-U3-13Y3M
-DeviceModelName	Blackfly S BFS-U3-13Y3M
-DeviceID	USB\VID_1E10&PID_4000&MI_00\8&260BF012&0&0000
-DeviceType	USB3Vision
-DeviceVendorName	FLIR
-DeviceInstanceId	USB\VID_1E10&PID_4000&MI_00\8&260BF012&0&0000
-DeviceCurrentSpeed	SuperSpeed
-DeviceAccessStatus	OpenReadWrite
-DeviceVersion	1808.0.120.0
-DeviceDriverVersion	PGRUSBCam3.sys : 2.7.3.249
-DevicePortId	7.2

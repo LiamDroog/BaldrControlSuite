@@ -16,21 +16,20 @@ class ImageFrame:
         self.window.rowconfigure(self.rowarr, minsize=25, weight=1)
         self.window.columnconfigure(self.colarr, minsize=25, weight=1)
         self.imageList = []
-        self.currentimage = None
+        self.imageList.append(image)
+        self.currentimage = 0
 
         self.factor = 0.35
         self.canvas = tk.Canvas(self.window, height=300, width=400)
         self.canvas.grid(row=1, column=6, rowspan=8, columnspan=16, sticky='nswe')
-        im = Image.open(image)
+        im = Image.fromarray(self.imageList[0])
         self.canvas.image = ImageTk.PhotoImage(
             im.resize((int(self.factor * im.size[0]), int(self.factor * im.size[1]))))
-        im = self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
-        self.imageList.append(image)
-        self.image_on_canvas = im
+        self.image_on_canvas = self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
 
         self.attributes_frame = tk.Frame(master=self.window, relief='raised', borderwidth=3)
         self.attributes_frame.grid(row=1, column=0, columnspan=6, rowspan=7, sticky='nsew')
-        self.atext = tk.Label(master=self.attributes_frame, text='yeet')
+        self.atext = tk.Label(master=self.attributes_frame, text='Image')
         self.atext.pack()
 
         self.nextbutton = tk.Button(master=self.window, text='>>', command=lambda: self.__changeimg('fwd'))
@@ -50,23 +49,26 @@ class ImageFrame:
 
     def addImage(self, image):
         self.imageList.append(image)
-        self.currentimage = image
-        self.__showImage(image)
 
     def __showImage(self, image):
-        img = Image.open(image)
-        img2 = ImageTk.PhotoImage(img.resize((int(self.factor * img.size[0]), int(self.factor * img.size[1]))))
-        im = self.canvas.create_image(0, 0, image=img2, anchor='nw')
-        self.canvas.itemconfig(self.image_on_canvas, image=im)
+        self.img = Image.fromarray(image)
+        print(self.img.size[0])
+        self.img2 = ImageTk.PhotoImage(self.img.resize((int(self.factor * self.img.size[0]),
+                                                   int(self.factor * self.img.size[1]))))
+        self.canvas.image = self.img2
+        print(self.img2)
+        #self.canvas.image = self.canvas.create_image(0, 0, image=self.img2, anchor='nw')
+        #.image_on_canvas = self.canvas.create_image(0, 0, image=self.canvas.image, anchor='nw')
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img2)
 
     def __changeimg(self, dir):
-        print(self.imageList)
-        idx = self.imageList.index(self.currentimage)
-        print(idx)
         if dir == 'fwd':
-            if idx < len(self.imageList):
-                self.__showImage(self.imageList[idx+1])
+            if self.currentimage < len(self.imageList)-1:
+                self.currentimage += 1
+                self.__showImage(self.imageList[self.currentimage])
 
         elif dir == 'bck':
-            if idx > 0:
-                self.__showImage(self.imageList[idx-1])
+            if self.currentimage > 0:
+                self.currentimage -= 1
+                self.__showImage(self.imageList[self.currentimage])
+        print(self.currentimage)
