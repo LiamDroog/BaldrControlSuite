@@ -42,6 +42,7 @@ class TwoAxisStage:
         self.datafile = None
         self.datafilename = None
         self.parameters = {
+            'Data Format' : ['grbl reference #', 'value'],
             'stepPulseLength': [0, None],
             'stepIdleDelay': [1, None],
             'axisDirection': [3, None],
@@ -54,7 +55,6 @@ class TwoAxisStage:
             'xMaxAcc': [120, None],
             'yMaxAcc': [121, None],
         }
-
         self.param_number = 2  ###########
 
         # draws all on-screen controls and assigns their event commands
@@ -170,8 +170,7 @@ class TwoAxisStage:
         self.set_home.grid(row=1, column=4, sticky='nsew')
         self.set_home.configure(width=self.buttonx, height=self.buttony)
 
-        self.start_from_death_btn = tk.Button(master=self.window, text='No temp\nfile found',
-                                              command=self.__startFromDeath)
+        self.start_from_death_btn = tk.Button(master=self.window, text='No temp\nfile found')
         self.start_from_death_btn.grid(row=2, column=5, sticky='nesw')
         self.start_from_death_btn['font'] = font.Font(size=10)
         self.start_from_death_btn.configure(width=self.buttonx, height=self.buttony)
@@ -187,6 +186,8 @@ class TwoAxisStage:
         self.Refresh()
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.initSerial(self.port, self.baud, self.startupfile)
+        self.window.geometry('800x400+%d+%d' % (self.window.winfo_screenwidth()/4 + 810,
+                                                self.window.winfo_screenheight()/5))
 
     def start(self):
         self.window.mainloop()
@@ -651,6 +652,9 @@ class TwoAxisStage:
             else:
                 button.configure(fg=c1)
             self.window.after(delay, lambda: self.__blinkButton(button, c1, c2, delay))
+
+    def getStageParameters(self):
+        return self.parameters
 
     def __createDataFile(self):
         """
