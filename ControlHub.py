@@ -30,9 +30,8 @@ class ControlHub:
 
     def __init__(self):
         self.window = tk.Tk(className='\Baldr Control Hub')
-        self.screenwidth = str(int(self.window.winfo_screenwidth() * 0.35))
-        self.screenheight = str(int(self.window.winfo_screenheight() * 0.35))
-        self.window.geometry(self.screenwidth + 'x' + self.screenheight)
+        self.screenwidth = int(self.window.winfo_screenwidth() * 0.55)
+        self.screenheight = int(self.window.winfo_screenheight() * 0.55)
         self.grid = [16, 9]
         self.rowarr = list(i for i in range(self.grid[1]))
         self.colarr = list(i for i in range(self.grid[0]))
@@ -41,6 +40,7 @@ class ControlHub:
 
         self.tabcontrol = ttk.Notebook(self.window)
 
+        self.diagnosticsFile = AddDiagnosticFrame.diagnosticsFile
         self.control_tab = ttk.Frame(self.tabcontrol)
         self.diag_tab = ttk.Frame(self.tabcontrol)
         self.diag_config = ttk.Frame(self.tabcontrol)
@@ -52,10 +52,16 @@ class ControlHub:
         self.diag_tab.rowconfigure(self.diag_row_arr, minsize=1, weight=1)
         self.diag_tab.columnconfigure(self.diag_row_arr, minsize=1, weight=1)
 
-        self.tabcontrol.add(self.control_tab, text='Control')
-        self.tabcontrol.add(self.diag_tab, text='Configure Diagnostics')
-        self.tabcontrol.add(self.diag_config, text='Add / Remove Diagnostics')
+        self.control_tab_name = 'Control'
+        self.diag_tab_name = 'Configure Diagnostics'
+        self.diag_config_name = 'Add / Remove Diagnostics'
+        self.tabcontrol.add(self.control_tab, text=self.control_tab_name)
+        self.tabcontrol.add(self.diag_tab, text=self.diag_tab_name)
+        self.tabcontrol.add(self.diag_config, text=self.diag_config_name)
         self.tabcontrol.grid(row=1, column=0, rowspan=self.grid[1]-1, columnspan=self.grid[0], sticky='news')
+
+        # refresh page whenever tab is clicked:
+        self.tabcontrol.bind("<<NotebookTabChanged>>", self.__handle_tab_change)
 
         self.diag_config.rowconfigure([1], minsize=25, weight=1)
         self.diag_config.columnconfigure([1], minsize=25, weight=1)
@@ -198,7 +204,7 @@ class ControlHub:
             self.camera1.set('Camera Connected')
 
         self.window.geometry(
-            '800x600+%d+%d' % (self.window.winfo_screenwidth() / 4, self.window.winfo_screenheight() / 5))
+            '%dx%d+%d+%d' % (self.screenwidth, self.screenheight, self.window.winfo_screenwidth() / 4, self.window.winfo_screenheight() / 5))
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.__setTempFile()
         self.window.update()
@@ -572,6 +578,24 @@ class ControlHub:
                 pos[1] = float(i[1:])
         return pos
 
+    def __handle_tab_change(self, event):
+        if self.tabcontrol.tab(self.tabcontrol.select())['text'] == self.diag_tab_name:
+            self.__refreshDiagnosticsTab()
+
+    def __refreshDiagnosticsTab(self):
+        if os.path.exists(self.diagnosticsFile):
+            d = np.load(self.diagnosticsFile, allow_pickle=True).item()
+            for i in d.keys():
+                target = self.Diagnostics_list[i-1]
+                target.clearText()
+                for key, val in d[i].items():
+                    if key == 'Diagnostic Name':
+                        target.name_entry.config(text=val)
+                    elif key == 'File Path':
+                        target.dir_entry.config(text=val)
+                    elif key == 'Enabled On Startup':
+                        target.enabled.set(1)
+
 
 class DiagnosticFrame:
     def __init__(self, master, posx, posy):
@@ -583,23 +607,24 @@ class DiagnosticFrame:
         self.subframe.columnconfigure(list(i for i in range(2)), minsize=1, weight=1)
         self.subframe.grid(row=self.xpos, column=self.ypos, sticky='nsew')
 
-        self.name = tk.Label(master=self.subframe, text='Enter Diagnostic Name')
+        self.name = tk.Label(master=self.subframe, text='Diagnostic Name')
         self.name.grid(row=0, column=0)
-        self.name_entry = tk.Entry(master=self.subframe)
+        self.name_entry = tk.Label(master=self.subframe, relief='groove')
         self.name_entry.grid(row=0, column=1, sticky='ew')
 
-        self.dir_label = tk.Label(master=self.subframe, text='Enter Directory')
+        self.dir_label = tk.Label(master=self.subframe, text='Directory')
         self.dir_label.grid(row=1, column=0)
-        self.dir_entry = tk.Entry(master=self.subframe)
+        self.dir_entry = tk.Label(master=self.subframe, relief='groove')
         self.dir_entry.grid(row=1, column=1, sticky='ew')
 
         self.enabled = tk.IntVar()
         self.enabledButton = tk.Checkbutton(master=self.subframe, text='Enable Diagnostic', variable=self.enabled)
         self.enabledButton.grid(row=2, column=0, columnspan=2)
 
-
-
-
+    def clearText(self):
+        self.name_entry.config(text='')
+        self.dir_entry.config(text='')
+        self.enabled.set(0)
 
 
 if __name__ == '__main__':
