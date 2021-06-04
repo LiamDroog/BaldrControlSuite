@@ -1,3 +1,4 @@
+import warnings; warnings.filterwarnings('ignore')
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font, messagebox
@@ -8,19 +9,15 @@ import serial.tools.list_ports
 from ImageViewer import ImageFrame
 from QueueClass import Queue
 from DiagnosticAddingClass import AddDiagnosticFrame
-import h5py
-from PIL import Image, ImageTk
 import numpy as np
-import pickle
-import matplotlib.pyplot as plt
 import serial
 import time
 import os
-import cv2
 from datetime import date
-from FLIRLib import BFSCam
-from FLIRTrigger import BFSTrigger
 import PySpin
+import DataParsing
+import WriteDataToHDF5
+os.system('cls')
 
 class ControlHub:
     """Spawns a control hub for the laser system with various functionalities.
@@ -58,7 +55,7 @@ class ControlHub:
         self.tabcontrol.add(self.control_tab, text=self.control_tab_name)
         self.tabcontrol.add(self.diag_tab, text=self.diag_tab_name)
         self.tabcontrol.add(self.diag_config, text=self.diag_config_name)
-        self.tabcontrol.grid(row=1, column=0, rowspan=self.grid[1]-1, columnspan=self.grid[0], sticky='news')
+        self.tabcontrol.grid(row=1, column=0, rowspan=self.grid[1] - 1, columnspan=self.grid[0], sticky='news')
 
         # refresh page whenever tab is clicked:
         self.tabcontrol.bind("<<NotebookTabChanged>>", self.__handle_tab_change)
@@ -88,7 +85,7 @@ class ControlHub:
         # migrate to class?
         self.system = PySpin.System.GetInstance()
 
-        #self.bfs = BFSTrigger()
+        # self.bfs = BFSTrigger()
         self.bfs = None
 
         # title
@@ -110,8 +107,8 @@ class ControlHub:
 
         # hdf5 storage file
         today = date.today()
-        self.h5filepath = 'datafiles/' + today.strftime("%b-%d-%Y")
-
+        self.h5filepath = 'DataFiles/' + today.strftime("%b-%d-%Y")
+        self.tempdatapath = 'DataFiles/queue/'
         if self.__createdir(self.h5filepath):
             print('dir made')
         self.__setShotFile()
@@ -204,14 +201,18 @@ class ControlHub:
             self.camera1.set('Camera Connected')
 
         self.window.geometry(
-            '%dx%d+%d+%d' % (self.screenwidth, self.screenheight, self.window.winfo_screenwidth() / 4, self.window.winfo_screenheight() / 5))
+            '%dx%d+%d+%d' % (self.screenwidth, self.screenheight, self.window.winfo_screenwidth() / 4,
+                             self.window.winfo_screenheight() / 5))
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.__setTempFile()
         self.window.update()
         # now root.geometry() returns valid size/placement
         self.window.minsize(self.window.winfo_width(), self.window.winfo_height())
 
-
+        # create data watch instance
+        self.watchDogList = []
+        self.__startH5Watchdog()
+        self.__startFileWatchdogs()
 
     def start(self):
         """
@@ -221,26 +222,33 @@ class ControlHub:
         """
         self.window.mainloop()
 
-
     def __on_closing(self):
         # if messagebox.askokcancel("Quit", "Quit? This will close all windows."):
         # self.window.destroy()
+        for i in self.watchDogList:
+            i.kill()
+        self.h5writer.kill()
         self.window.destroy()
 
     def __armLaser(self):
-        if self.stage != None:
-            if not self.laserArmed:
-                self.shootLaser_btn['state'] = tk.ACTIVE
-                self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
-                self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
-                self.laserArmed = True
-                self.bfs.init()
-            else:
-                self.armLaser_btn.config(bg='#F0F0F0', fg='red')
-                self.shootLaser_btn['state'] = tk.DISABLED
-                self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
-                self.laserArmed = False
-                self.bfs.deinit()
+        # if self.stage != None:
+        #     if not self.laserArmed:
+        #         self.shootLaser_btn['state'] = tk.ACTIVE
+        #         self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
+        #         self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
+        #         self.laserArmed = True
+        #         self.bfs.init()
+        #     else:
+        #         self.armLaser_btn.config(bg='#F0F0F0', fg='red')
+        #         self.shootLaser_btn['state'] = tk.DISABLED
+        #         self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
+        #         self.laserArmed = False
+        #         self.bfs.deinit()
+
+            self.shootLaser_btn['state'] = tk.ACTIVE
+            self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
+            self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
+            self.laserArmed = True
 
     def __fireLaser(self):
         """
@@ -252,12 +260,12 @@ class ControlHub:
         data being collected.
         :return: None
         """
-        if self.stage.isOpen():
-            self.__createShotFile()
-            image = self.__captureimage()
-            # self.__triggerLaser()
-            # self.__takePicture() for all cameras?? Multithreaded might be needed here for simultaneity
-            self.__saveData(image)
+        # if self.stage.isOpen():
+        self.__createShotFile()
+            # image = self.__captureimage()
+            # # self.__triggerLaser()
+            # # self.__takePicture() for all cameras?? Multithreaded might be needed here for simultaneity
+            # self.__saveData(image)
 
     def __saveData(self, image):
         # stage:
@@ -332,7 +340,10 @@ class ControlHub:
         owd = os.getcwd()
         try:
             os.chdir(self.h5filepath)
-            dirs = os.listdir()
+            # dirs = [file for file in os.listdir()
+            #         if os.path.isfile(os.path.join(self.h5filepath+'\\', file))]
+            dirs = [file for file in os.listdir()
+                    if os.path.isfile(file)]
             if dirs == []:
                 self.shotnum = 0
             else:
@@ -348,8 +359,8 @@ class ControlHub:
                         self.shotnum = int(lf1[i:])
                         break
             self.shotfile = 'shot' + '0' * (4 - len(str(self.shotnum))) + str(self.shotnum) + '.hdf5'
-        except:
-            print('something went wrong')
+        except Exception as e:
+            print('something went wrong', e)
         finally:
             os.chdir(owd)
 
@@ -586,7 +597,7 @@ class ControlHub:
         if os.path.exists(self.diagnosticsFile):
             d = np.load(self.diagnosticsFile, allow_pickle=True).item()
             for i in d.keys():
-                target = self.Diagnostics_list[i-1]
+                target = self.Diagnostics_list[i - 1]
                 target.clearText()
                 for key, val in d[i].items():
                     if key == 'Diagnostic Name':
@@ -596,6 +607,17 @@ class ControlHub:
                     elif key == 'Enabled On Startup':
                         target.enabled.set(1)
 
+    def __startFileWatchdogs(self):
+        if os.path.exists(self.diagnosticsFile):
+            d = np.load(self.diagnosticsFile, allow_pickle=True).item()
+            for i in d.keys():
+                self.watchDogList.append(DataParsing.DataDaemon(d[i]['File Path'] + '/', self.tempdatapath, 5))
+        for i in self.watchDogList:
+            i.main()
+
+    def __startH5Watchdog(self):
+        self.h5writer = WriteDataToHDF5.HDF5Writer(self.tempdatapath, self.h5filepath)
+        self.h5writer.start()
 
 class DiagnosticFrame:
     def __init__(self, master, posx, posy):
@@ -628,7 +650,5 @@ class DiagnosticFrame:
 
 
 if __name__ == '__main__':
-
     console = ControlHub()
     console.start()
-
