@@ -90,7 +90,7 @@ class AddDiagnosticFrame:
         self.rmdlabel.grid(row=0, column=0, sticky='ew')
         self.rmdropdown.grid(row=0, column=1, sticky='we')
 
-        self.removeParameterButton = tk.Button(master=self.remove_parameter_subframe, text='Remove Paramter',
+        self.removeParameterButton = tk.Button(master=self.remove_parameter_subframe, text='Remove Parameter',
                                                command=lambda: self.__removeDiagnostic(self.rmselected_diagnostic.get()))
         self.rmCheck2 = tk.Checkbutton(master=self.remove_parameter_subframe,
                                        text='I acknowledge that this diagnostic will cease to exist and '
@@ -127,12 +127,16 @@ class AddDiagnosticFrame:
             return
         if self.serialnumberentry.get().strip() == '':
             self.serialnumber.config(text='Enter Serial Number', fg='red')
-            self.master.after(3000, lambda: self.serialnumber.config(text='Name:', fg='black'))
+            self.master.after(3000, lambda: self.serialnumber.config(text='Serial Number:', fg='black'))
             return
         if self.serialnumberentry.get().strip() == '':
             self.serialnumber.config(text='Enter Serial Number', fg='red')
             self.master.after(3000, lambda: self.serialnumber.config(text='Name:', fg='black'))
             return
+        if not os.path.exists(self.flirfilepathentry.get().strip()):
+            self.flirfilepath.config(text='Must be valid directory', fg='red')
+            self.master.after(3000, lambda: self.flirfilepath.config(text='Data File Path:', fg='black'))
+
         self.FLIRparams['Diagnostic Name'] = self.cameranameentry.get()
         self.FLIRparams['Serial Number'] = self.serialnumberentry.get()
         self.FLIRparams['File Path'] = self.flirfilepathentry.get()
