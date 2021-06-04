@@ -4,62 +4,74 @@ import sys
 import numpy as np
 
 
-class BFSTrigger:
+class GetBFSCameras:
     def __init__(self):
-        self.triggermode = 1  # software trigger
         self.system = PySpin.System.GetInstance()
         self.cam_list = self.system.GetCameras()
         self.cam_num = self.cam_list.GetSize()
-        self.image_number = 1
-        self.image_result = None
+
         if self.cam_num == 0:
-            self.cam_list.clear()
+            self.cam_list.Clear()
             self.system.ReleaseInstance()
             print('no cameras!')
             return
-        # for i in self.cam_list:
-        #     self.triggerConfig(i)
-        self.cam = self.cam_list[0]
+        self.cam_dict = {}
+        for i in self.cam_list:
+            self.cam_dict[i.TLDevice.DeviceSerialNumber.ToString()] = i
+
+    def releaseSystem(self):
+        self.cam_list.Clear()
+        self.system.ReleaseInstance()
+
+    def getCameras(self):
+        return self.cam_dict
+
+
+class BFSTrigger:
+    def __init__(self, camera):
+        self.cam = camera
+        self.triggermode = 1  # software trigger
+        self.image_number = 1
+        self.image_result = None
         self.nodemap_tldevice = self.cam.GetTLDeviceNodeMap()
         self.CamProperties = {}
 
-    def triggerConfig(self, cam):
-        if cam.TriggerMode.GetAccessMode() != PySpin.RW:
+    def triggerConfig(self):
+        if self.cam.TriggerMode.GetAccessMode() != PySpin.RW:
             print('Unable to disable trigger mode (node retrieval). Aborting...')
             return False
 
-        cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+        self.cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
 
         # Set TriggerSelector to FrameStart
         # For this example, the trigger selector should be set to frame start.
         # This is the default for most cameras.
-        if cam.TriggerSelector.GetAccessMode() != PySpin.RW:
+        if self.cam.TriggerSelector.GetAccessMode() != PySpin.RW:
             print('Unable to get trigger selector (node retrieval). Aborting...')
             return False
 
-        cam.TriggerSource.SetValue(PySpin.TriggerSelector_FrameStart)
+        self.cam.TriggerSource.SetValue(PySpin.TriggerSelector_FrameStart)
 
         # Select trigger source
         # The trigger source must be set to hardware or software while trigger
         # mode is off.
-        if cam.TriggerSource.GetAccessMode() != PySpin.RW:
+        if self.cam.TriggerSource.GetAccessMode() != PySpin.RW:
             print('Unable to get trigger source (node retrieval). Aborting...')
             return False
 
         if self.triggermode == 1:
-            cam.TriggerSource.SetValue(PySpin.TriggerSource_Software)
+            self.cam.TriggerSource.SetValue(PySpin.TriggerSource_Software)
             # print('Trigger source set to software...')
         elif self.triggermode == 2:
-            cam.TriggerSource.SetValue(PySpin.TriggerSource_Line0)
+            self.cam.TriggerSource.SetValue(PySpin.TriggerSource_Line0)
             # print('Trigger source set to hardware...')
 
             # Turn trigger mode on
             # Once the appropriate trigger source has been set, turn trigger mode
             # on in order to retrieve images using the trigger.
-        cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
-        #print('Trigger mode turned back on...')
+        self.cam.TriggerMode.SetValue(PySpin.TriggerMode_On)
 
-    def run_single_camera(self, cam):
+    def trigger(self):
         """
         This function acts as the body of the example; please see NodeMapInfo example
         for more in-depth comments on setting up cameras.
@@ -70,29 +82,16 @@ class BFSTrigger:
         :rtype: bool
         """
         try:
-            # Retrieve TL device nodemap and print device information
-            # nodemap_tldevice = cam.GetTLDeviceNodeMap()
-            #
-            # result &= print_device_info(nodemap_tldevice)
-
-            # Initialize camera
-
-
-            # Retrieve GenICam nodemap
-            nodemap = cam.GetNodeMap()
-
             # Configure trigger
-            if self.triggerConfig(cam) is False:
+            if self.triggerConfig() is False:
                 return False
 
             # Acquire images
-            imagedata = self.acquire_images(cam)
+            imagedata = self.acquire_images()
 
             # Reset trigger
-            self.reset_trigger(cam)
+            self.reset_trigger()
 
-            # Deinitialize camera
-            #cam.DeInit()
 
         except PySpin.SpinnakerException as ex:
             print('Error: %s' % ex)
@@ -105,7 +104,7 @@ class BFSTrigger:
     def init(self):
         self.cam.Init()
 
-    def reset_trigger(self, cam):
+    def reset_trigger(self):
         """
         This function returns the camera to a normal state by turning off trigger mode.
 
@@ -119,11 +118,11 @@ class BFSTrigger:
             # Ensure trigger mode off
             # The trigger must be disabled in order to configure whether the source
             # is software or hardware.
-            if cam.TriggerMode.GetAccessMode() != PySpin.RW:
+            if self.cam.TriggerMode.GetAccessMode() != PySpin.RW:
                 print('Unable to disable trigger mode (node retrieval). Aborting...')
                 return False
 
-            cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
+            self.cam.TriggerMode.SetValue(PySpin.TriggerMode_Off)
 
             # print('Trigger mode disabled...')
 
@@ -133,7 +132,7 @@ class BFSTrigger:
 
         return result
 
-    def acquire_images(self, cam):
+    def acquire_images(self):
         """
         This function acquires and saves 10 images from a device.
         Please see Acquisition example for more in-depth comments on acquiring images.
@@ -147,22 +146,22 @@ class BFSTrigger:
             result = True
 
             # Set acquisition mode to continuous
-            if cam.AcquisitionMode.GetAccessMode() != PySpin.RW:
+            if self.cam.AcquisitionMode.GetAccessMode() != PySpin.RW:
                 print('Unable to set acquisition mode to continuous. Aborting...')
                 return False
 
-            cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
+            self.cam.AcquisitionMode.SetValue(PySpin.AcquisitionMode_Continuous)
             # print('Acquisition mode set to continuous...')
 
             #  Begin acquiring images
-            cam.BeginAcquisition()
+            self.cam.BeginAcquisition()
 
             # print('Acquiring images...')
 
             # Get device serial number for filename
             device_serial_number = ''
-            if cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
-                device_serial_number = cam.TLDevice.DeviceSerialNumber.GetValue()
+            if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
+                device_serial_number = self.cam.TLDevice.DeviceSerialNumber.GetValue()
 
                 # print('Device serial number retrieved as %s...' % device_serial_number)
 
@@ -170,10 +169,10 @@ class BFSTrigger:
             try:
 
                 #  Retrieve the next image from the trigger
-                cam.TriggerSoftware.Execute()
+                self.cam.TriggerSoftware.Execute()
 
                 #  Retrieve next received image
-                image_result = cam.GetNextImage(1000)
+                image_result = self.cam.GetNextImage(1000)
 
                 #  Ensure image completion
                 if image_result.IsIncomplete():
@@ -189,7 +188,7 @@ class BFSTrigger:
                 return False
 
             # End acquisition
-            cam.EndAcquisition()
+            self.cam.EndAcquisition()
             return imagedata
 
 
