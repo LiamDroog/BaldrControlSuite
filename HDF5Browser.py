@@ -104,9 +104,9 @@ class FileBrowser:
         else:
             return r
 
-    def __getImage(self):
+    def __getImage(self, dataset):
         try:
-            image = h5m.getData(self.currentfile, 'BFSimage')
+            image = h5m.getData(self.currentfile, dataset)
             ImageFrame('', image=image)
         except:
             self.__sendOutput('File does not have an image')
@@ -174,14 +174,14 @@ class FileBrowser:
                 return
         else:
             try:
-                parsedcommand = command.lower().split('$')
+                parsedcommand = command.split('$')
                 i = parsedcommand[1]
             except:
                 self.__errmessage()
                 return
             else:
                 if i.strip() != '':
-                    i = i.lower().strip().split(' ')
+                    i = i.strip().split(' ')
                     if i[0] == 'get':
                         self.__getFile(i[1])
                     elif i[0] == 'create':
@@ -211,7 +211,7 @@ class FileBrowser:
                         else:
                             self.__help(i[1].strip())
                     elif i[0] == 'getimage':
-                        self.__getImage()
+                        self.__getImage(' '.join(j for j in i[1:]))
                     elif i[0] == 'getdirimages':
                         self.__getDirImages()
                     else:
