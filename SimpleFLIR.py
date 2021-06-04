@@ -1,8 +1,6 @@
 #
 # Adapted from Dustin Kleckner, 2019
 
-
-import numpy as np
 import PySpin
 
 
@@ -157,6 +155,8 @@ class Camera:
         '''Initializes the camera.  Automatically called if the camera is opened
         using a `with` clause.'''
 
+
+
         self.cam.Init()
 
         for node in self.cam.GetNodeMap().GetNodes():
@@ -201,6 +201,18 @@ class Camera:
             self.cam.EndAcquisition()
         self.running = False
 
+    def configliveout(self):
+        self.nodemap = self.cam.GetNodeMap()
+        self.sNodemap = self.cam.GetTLStreamNodeMap()
+        self.node_bufferhandling_mode = PySpin.CEnumerationPtr(self.sNodemap.GetNode('StreamBufferHandlingMode'))
+        self.node_newestonly = self.node_bufferhandling_mode.GetEntryByName('NewestOnly')
+        self.node_newestonly_mode = self.node_newestonly.GetValue()
+        self.node_bufferhandling_mode.SetIntValue(self.node_newestonly_mode)
+        self.node_acquisition_mode = PySpin.CEnumerationPtr(self.nodemap.GetNode('AcquisitionMode'))
+        self.node_acquisition_mode_continuous = self.node_acquisition_mode.GetEntryByName('Continuous')
+        self.acquisition_mode_continuous = self.node_acquisition_mode_continuous.GetValue()
+        self.node_acquisition_mode.SetIntValue(self.acquisition_mode_continuous)
+
     def get_image(self, wait=True):
         '''Get an image from the camera.
 
@@ -239,6 +251,7 @@ class Camera:
             return img.GetNDArray(), img.GetChunkData()
         else:
             return img.GetNDArray()
+
 
     def __getattr__(self, attr):
         if attr in self.camera_attributes:
@@ -426,6 +439,8 @@ class Camera:
     def getSerialNumber(self):
         if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
             return self.cam.TLDevice.DeviceSerialNumber.ToString()
+    def getDeviceName(self):
+        return self.cam.TLDevice.DeviceDisplayName.ToString()
     # def method_info(self, depth=1):
     #     '''Dump a string containing info about all the dynamically generated
     #     camera methods.
