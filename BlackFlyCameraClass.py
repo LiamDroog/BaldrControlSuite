@@ -2,20 +2,26 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import date
-
+import time
 from SimpleFLIR import Camera
-
 
 class CameraNotConnected(Exception):
     pass
 
 
 class RunBlackFlyCamera:
-    def __init__(self, camserial, date, filenum):
-        # camserial: camera serial number
-        # filenum: starting number for files
-        # instantiate camera
+    """
+    Per-camera instance of this is required. Deals with a hardware trigger (currently software as no hardware triggers
+    have been configured) and writes data to specified file directory so that the file daemon can transfer it to the
+    queue for writing to shot hdf5 file
+    """
+    def __init__(self, camserial, filenum):
+        """
+        Initalizes camera from input serial number and starting filename
+
+        :param camserial: Camera's serial number
+        :param filenum: number to start numbering files at
+        """
         try:
             self.cam = Camera(camserial)
         except:
@@ -38,12 +44,14 @@ class RunBlackFlyCamera:
         self.cam.init()
 
     def adjust(self, target, value):
-        self.cam.__setattr__(target, value)
+        self.cam.setattr(target, value)
 
     def handleTrigger(self):
-        self.__saveData(self.cam.get_array())
         self.filenum += 1
+        self.__saveData(self.cam.get_array())
 
+    def get_image_array(self):
+        return self.cam.get_array()
     def __getShotMetadata(self):
         return self.cam.getDeviceParams()
 
@@ -56,6 +64,7 @@ class RunBlackFlyCamera:
         returndict['data'] = data
         returndict['metadata'] = self.__getShotMetadata()
         np.save(self.filepath + self.datafilename, returndict)
+        print('Saved image ' + self.datafilename)
 
     def start(self):
         self.cam.start()
@@ -69,6 +78,7 @@ class RunBlackFlyCamera:
     def liveView(self):
         self.isLiveOut = True
         self.cam.configliveout()
+        self.cam.start()
         fig = plt.figure(1)
         fig.canvas.mpl_connect('close_event', self.__closeLiveView)
 
@@ -83,11 +93,13 @@ class RunBlackFlyCamera:
 
 
 if __name__ == '__main__':
-    today = date.today()
-    date = today.strftime("%b-%d-%Y")
-    camera = RunBlackFlyCamera('19129388', date, 1)
+    camera = RunBlackFlyCamera('19129388', 1)
     camera.start()
-    for i in range(10):
-        camera.handleTrigger()
+    camera.liveView()
+    # for i in range(50):
+    #     camera.handleTrigger()
+    #     time.sleep(0.5)
+    #     print('imaging')
     camera.stop()
     camera.close()
+
