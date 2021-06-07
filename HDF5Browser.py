@@ -22,9 +22,12 @@ class FileBrowser:
     #   cd methods - done
     #   add visual cues for all
     #   export to csv or xlsx
-    def __init__(self):
-        #self.window = tk.Tk(className='\HDF5 File Viewer')
-        self.window = tk.Toplevel()
+    def __init__(self, subprocess=True):
+        if subprocess:
+            self.window = tk.Toplevel()
+        else:
+            self.window = tk.Tk(className='\HDF5 File Viewer')
+
         self.window.title('HDF5 File Viewer')
         self.screenwidth = str(int(self.window.winfo_screenwidth() * 0.35))
         self.screenheight = str(int(self.window.winfo_screenheight() * 0.35))
@@ -211,6 +214,8 @@ class FileBrowser:
                         else:
                             self.__help(i[1].strip())
                     elif i[0] == 'getimage':
+                        # TODO: Add to diagnostic config entry saying datatype is an image
+                        #       so that we can filter here for display or not
                         self.__getImage(' '.join(j for j in i[1:]))
                     elif i[0] == 'getdirimages':
                         self.__getDirImages()
@@ -464,3 +469,7 @@ class FileBrowser:
             self.__sendOutput(' ', head='')
         except Exception as e:
             print(e)
+
+
+if __name__ == '__main__':
+    FileBrowser(subprocess=False).start()

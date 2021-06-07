@@ -18,9 +18,9 @@ class GetBFSCameras:
             self.cam_ser_list.append(i.TLDevice.DeviceSerialNumber.ToString())
 
         del i
-        self.releaseSystem()
+        self.__releaseSystem()
 
-    def releaseSystem(self):
+    def __releaseSystem(self):
         self.cam_list.Clear()
         self.system.ReleaseInstance()
 
@@ -31,7 +31,9 @@ class GetBFSCameras:
 class CameraError(Exception):
     pass
 
+
 _SYSTEM = None
+
 
 def list_cameras():
     '''Return a list of Spinnaker cameras.  Also initializes the PySpin
@@ -155,8 +157,6 @@ class Camera:
         '''Initializes the camera.  Automatically called if the camera is opened
         using a `with` clause.'''
 
-
-
         self.cam.Init()
 
         for node in self.cam.GetNodeMap().GetNodes():
@@ -252,7 +252,6 @@ class Camera:
         else:
             return img.GetNDArray()
 
-
     def __getattr__(self, attr):
         if attr in self.camera_attributes:
 
@@ -271,8 +270,7 @@ class Camera:
         else:
             raise AttributeError(attr)
 
-
-    def __setattr__(self, attr, val):
+    def setattr(self, attr, val):
         if attr in self.camera_attributes:
 
             prop = self.camera_attributes[attr]
@@ -291,7 +289,6 @@ class Camera:
                 raise CameraError("Unknown property '%s'." % attr)
             else:
                 super().__setattr__(attr, val)
-
 
     def get_info(self, name):
         '''Gen information on a camera node (attribute or method).
@@ -350,7 +347,6 @@ class Camera:
 
         return info
 
-
     def document(self):
         '''Creates a MarkDown documentation string for the camera.'''
         lines = [self.DeviceVendorName.strip() + ' ' + self.DeviceModelName.strip()]
@@ -395,7 +391,8 @@ class Camera:
         lines.append('Commands')
         lines.append('-' * len(lines[-1]))
         lines.append('')
-        lines.append('**Note: the camera recording should be started/stopped using the `start` and `stop` methods, not any of the functions below (see simple_pyspin documentation).**')
+        lines.append(
+            '**Note: the camera recording should be started/stopped using the `start` and `stop` methods, not any of the functions below (see simple_pyspin documentation).**')
         lines.append('')
 
         for attr in sorted(self.camera_methods.keys()):
@@ -439,8 +436,10 @@ class Camera:
     def getSerialNumber(self):
         if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
             return self.cam.TLDevice.DeviceSerialNumber.ToString()
+
     def getDeviceName(self):
         return self.cam.TLDevice.DeviceDisplayName.ToString()
+
     # def method_info(self, depth=1):
     #     '''Dump a string containing info about all the dynamically generated
     #     camera methods.
