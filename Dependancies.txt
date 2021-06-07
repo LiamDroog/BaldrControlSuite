@@ -1,0 +1,13 @@
+These files utilize the following libraries (must be compatible with py 3.8):
+Numpy
+h5py
+pyserial
+xlsxwriter
+Asyncio - built in
+os - built in
+multiprocessing - built in
+tkinter - built in
+time - built in
+serial - built in
+
+
