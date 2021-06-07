@@ -1,4 +1,6 @@
-import warnings; warnings.filterwarnings('ignore')
+import warnings
+
+warnings.filterwarnings('ignore')
 import tkinter as tk
 from tkinter import ttk
 from tkinter import font, messagebox
@@ -17,7 +19,10 @@ from datetime import date
 import PySpin
 import DataParsing
 import WriteDataToHDF5
+from BlackFlyCameraClass import RunBlackFlyCamera
+
 os.system('cls')
+
 
 class ControlHub:
     """Spawns a control hub for the laser system with various functionalities.
@@ -74,7 +79,6 @@ class ControlHub:
         self.imageframe = None
         self.imageframerunning = False
         self.laserArmed = False
-        self.bfs = None
         self.queue = None
         self.temp_save_running = False
         self.filebrowser = None
@@ -84,9 +88,6 @@ class ControlHub:
         self.stageparameters = {}
         # migrate to class?
         self.system = PySpin.System.GetInstance()
-
-        # self.bfs = BFSTrigger()
-        self.bfs = None
 
         # title
         self.title_frame = tk.Frame(master=self.window, relief='raised', borderwidth=2)
@@ -109,9 +110,14 @@ class ControlHub:
         today = date.today()
         self.h5filepath = 'DataFiles/' + today.strftime("%b-%d-%Y")
         self.tempdatapath = 'DataFiles/queue/'
-        if self.__createdir(self.h5filepath):
-            print('dir made')
+        # if self.__createdir(self.h5filepath):
+        #     print('dir made')
         self.__setShotFile()
+
+        # Placeholder for triggering. Trigger signal will go to stanford box IRL.
+        # this allows to test functionality with a mock trigger going to a sensor
+        self.bfs = RunBlackFlyCamera('19129388', self.shotnum)
+        self.bfs.adjust('GainAuto', 'Off')
 
         # Com port
         comlist = [comport.device for comport in serial.tools.list_ports.comports()]
@@ -197,9 +203,6 @@ class ControlHub:
         self.cam_lbl['font'] = font.Font(size=14)
         self.camera1.set('Camera Not Connected')
 
-        if self.bfs:
-            self.camera1.set('Camera Connected')
-
         self.window.geometry(
             '%dx%d+%d+%d' % (self.screenwidth, self.screenheight, self.window.winfo_screenwidth() / 4,
                              self.window.winfo_screenheight() / 5))
@@ -227,6 +230,7 @@ class ControlHub:
         # self.window.destroy()
         for i in self.watchDogList:
             i.kill()
+        self.bfs.close()
         self.h5writer.kill()
         self.window.destroy()
 
@@ -245,10 +249,10 @@ class ControlHub:
         #         self.laserArmed = False
         #         self.bfs.deinit()
 
-            self.shootLaser_btn['state'] = tk.ACTIVE
-            self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
-            self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
-            self.laserArmed = True
+        self.shootLaser_btn['state'] = tk.ACTIVE
+        self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
+        self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
+        self.laserArmed = True
 
     def __fireLaser(self):
         """
@@ -261,11 +265,20 @@ class ControlHub:
         :return: None
         """
         # if self.stage.isOpen():
-        self.__createShotFile()
-            # image = self.__captureimage()
-            # # self.__triggerLaser()
-            # # self.__takePicture() for all cameras?? Multithreaded might be needed here for simultaneity
-            # self.__saveData(image)
+        st = time.time()
+        for i in range(10):
+            self.__createShotFile()
+            self.__trigger()
+        print('Time taken for ten shots: ', str(time.time() - st))
+        # image = self.__captureimage()
+        # # self.__triggerLaser()
+        # # self.__takePicture() for all cameras?? Multithreaded might be needed here for simultaneity
+        # self.__saveData(image)
+
+    def __trigger(self):
+        self.bfs.start()
+        self.bfs.handleTrigger()
+        self.bfs.stop()
 
     def __saveData(self, image):
         # stage:
@@ -377,9 +390,6 @@ class ControlHub:
 
         finally:
             os.chdir(owd)
-
-    def __captureimage(self):
-        return self.bfs.run_single_camera(self.bfs.cam)
 
     def __getCurrentImage(self):
         owd = os.getcwd()
@@ -613,11 +623,12 @@ class ControlHub:
             for i in d.keys():
                 self.watchDogList.append(DataParsing.DataDaemon(d[i]['File Path'] + '/', self.tempdatapath, 5))
         for i in self.watchDogList:
-            i.main()
+            i.start()
 
     def __startH5Watchdog(self):
         self.h5writer = WriteDataToHDF5.HDF5Writer(self.tempdatapath, self.h5filepath)
         self.h5writer.start()
+
 
 class DiagnosticFrame:
     def __init__(self, master, posx, posy):
