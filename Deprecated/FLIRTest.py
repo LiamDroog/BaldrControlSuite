@@ -1,8 +1,5 @@
 import PySpin
-import matplotlib.pyplot as plt
-from FLIRLib import BFSCam
-import time
-import keyboard
+from Deprecated.FLIRLib import BFSCam
 
 
 def main():
