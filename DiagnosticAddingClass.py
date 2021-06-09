@@ -166,6 +166,7 @@ class AddDiagnosticFrame:
         np.save(self.diagnosticsFile, d)
 
 class enableOnStartupButton:
+    # todo: Check if enabled and then activate within controlhub
     def __init__(self, master, posx, posy):
         self.enabled = tk.IntVar()
         self.enabledButton = tk.Checkbutton(master=master, text='Enable on startup: ', variable=self.enabled)

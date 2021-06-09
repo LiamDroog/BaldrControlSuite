@@ -1,13 +1,3 @@
-import numpy as np
-import h5py
-import time
-from droogCNC import HDF5File
-import HDF5Methods as h5m
-from datetime import date
-import os
-import PySpin
-from FLIRTrigger import BFSTrigger
-from FLIRLib import BFSCam
 import tkinter as tk
 from tkinter import ttk
 

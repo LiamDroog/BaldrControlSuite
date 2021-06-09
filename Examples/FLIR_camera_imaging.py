@@ -26,10 +26,14 @@ if __name__ == '__main__':
         # doesn't need a cam.start() call, but needs a stop() call
         bfs.liveView()
     else:
+        bfs.adjust('GainAuto', 'Off')
+        bfs.adjust('ExposureAuto', 'Off')
+        bfs.adjust('ExposureTime', 50)
         bfs.start()
         data = bfs.get_image_array()
         im = Image.fromarray(data, 'L')
         im.show()
+        im.save('FLIR' + str(shotNum) + '.bmp')
     # stop aquisition
     bfs.stop()
     # close camera

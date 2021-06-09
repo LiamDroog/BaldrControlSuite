@@ -3,18 +3,32 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import time
-from SimpleFLIR import Camera
+from SimpleFLIR import Camera, GetBFSCameras
+
 
 class CameraNotConnected(Exception):
     pass
 
 
+class ListCameras:
+    def __init__(self):
+        self.camlist = GetBFSCameras().getCameras()
+
+    def get(self):
+        return self.camlist
+
+
 class RunBlackFlyCamera:
+    # Todo: loop upon instantiation to get commands from queue (as input when creating)
+    #       Handle the inputs for shutdown
+    #       Handle how to implement hardware trigger
+    #       Move this to new file bc it'll get specialized quick
     """
     Per-camera instance of this is required. Deals with a hardware trigger (currently software as no hardware triggers
     have been configured) and writes data to specified file directory so that the file daemon can transfer it to the
     queue for writing to shot hdf5 file
     """
+
     def __init__(self, camserial, filenum):
         """
         Initalizes camera from input serial number and starting filename
@@ -31,11 +45,11 @@ class RunBlackFlyCamera:
         self.camName = self.cam.getDeviceName()
         self.filenum = filenum
         self.datafilename = self.camserial + '_shotdata_' + '0' * (4 - len(str(self.filenum))) + str(filenum) + '.npy'
-        self.metadatafilename = self.camserial + '_shotmetadata_' + '0' * (4 - len(str(self.filenum))) + str(
-            filenum) + '.npy'
+        # self.metadatafilename = self.camserial + '_shotmetadata_' + '0' * (4 - len(str(self.filenum))) + str(
+        #     filenum) + '.npy'
 
         # set file directory
-        self.filepath = 'TempDataFiles/' + '/' + self.camserial + '/'
+        self.filepath = 'TempDataFiles/' + self.camserial + '/'
 
         if not os.path.exists(self.filepath):
             os.makedirs(self.filepath)
@@ -43,8 +57,13 @@ class RunBlackFlyCamera:
         # initialize camera
         self.cam.init()
 
+        # todo: run trigger watch loop here?
+
     def adjust(self, target, value):
         self.cam.setattr(target, value)
+
+    def wait_for_trigger(self):
+        pass
 
     def handleTrigger(self):
         self.filenum += 1
@@ -52,6 +71,7 @@ class RunBlackFlyCamera:
 
     def get_image_array(self):
         return self.cam.get_array()
+
     def __getShotMetadata(self):
         return self.cam.getDeviceParams()
 
@@ -102,4 +122,3 @@ if __name__ == '__main__':
     #     print('imaging')
     camera.stop()
     camera.close()
-

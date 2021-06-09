@@ -1,6 +1,5 @@
 #
 # Adapted from Dustin Kleckner, 2019
-
 import PySpin
 
 
@@ -14,13 +13,14 @@ class GetBFSCameras:
             print('no cameras!')
 
         self.cam_ser_list = []
-        for i in self.cam_list:
-            self.cam_ser_list.append(i.TLDevice.DeviceSerialNumber.ToString())
+        if self.cam_list:
+            for i in self.cam_list:
+                self.cam_ser_list.append(str(i.TLDevice.DeviceSerialNumber.ToString()))
+            del i
 
-        del i
-        self.__releaseSystem()
+        self.releaseSystem()
 
-    def __releaseSystem(self):
+    def releaseSystem(self):
         self.cam_list.Clear()
         self.system.ReleaseInstance()
 

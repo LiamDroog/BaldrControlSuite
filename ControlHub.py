@@ -1,5 +1,4 @@
 import warnings
-
 warnings.filterwarnings('ignore')
 import tkinter as tk
 from tkinter import ttk
@@ -23,6 +22,11 @@ from BlackFlyCameraClass import RunBlackFlyCamera
 
 os.system('cls')
 
+# TODO: Change stage such that entire control can operate with or
+#       without the stage being connected. Including data saving.
+#       - Importing code to run / trigger stuff from laser and stage
+#       - Data saving should go into same queue for ease of analysis
+#       - Save temp data for power off failure \
 
 class ControlHub:
     """Spawns a control hub for the laser system with various functionalities.
@@ -110,8 +114,8 @@ class ControlHub:
         today = date.today()
         self.h5filepath = 'DataFiles/' + today.strftime("%b-%d-%Y")
         self.tempdatapath = 'DataFiles/queue/'
-        # if self.__createdir(self.h5filepath):
-        #     print('dir made')
+        if not self.__createdir(self.h5filepath):
+            print('Shot directory exists already')
         self.__setShotFile()
 
         # Placeholder for triggering. Trigger signal will go to stanford box IRL.
@@ -248,11 +252,16 @@ class ControlHub:
         #         self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
         #         self.laserArmed = False
         #         self.bfs.deinit()
-
-        self.shootLaser_btn['state'] = tk.ACTIVE
-        self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
-        self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
-        self.laserArmed = True
+        if not self.laserArmed:
+            self.shootLaser_btn['state'] = tk.ACTIVE
+            self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
+            self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
+            self.laserArmed = True
+        else:
+            self.armLaser_btn.config(bg='#F0F0F0', fg='red')
+            self.shootLaser_btn['state'] = tk.DISABLED
+            self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
+            self.laserArmed = False
 
     def __fireLaser(self):
         """
@@ -264,12 +273,12 @@ class ControlHub:
         data being collected.
         :return: None
         """
-        # if self.stage.isOpen():
         st = time.time()
         for i in range(10):
             self.__createShotFile()
             self.__trigger()
-        print('Time taken for ten shots: ', str(time.time() - st))
+        print('Time taken: ', str(time.time() - st))
+
         # image = self.__captureimage()
         # # self.__triggerLaser()
         # # self.__takePicture() for all cameras?? Multithreaded might be needed here for simultaneity
@@ -279,24 +288,35 @@ class ControlHub:
         self.bfs.start()
         self.bfs.handleTrigger()
         self.bfs.stop()
+        if self.stage.isOpen():
+            self.__saveStageData()
 
-    def __saveData(self, image):
-        # stage:
-        st = time.time()
-        owd = os.getcwd()
-        try:
-            os.chdir(self.h5filepath)
-            h5m.createDataset(self.shotfile, 'StagePos', data=self.stage.getPos())
-            for key, val in self.stage.getStageParameters().items():
-                h5m.setMetadata(self.shotfile, str(key), str(val), path='StagePos')
-            h5m.createDataset(self.shotfile, 'BFSimage', data=image)
-            h5m.setMetadataFromDict(self.shotfile, self.bfs.getDeviceParams(), path='BFSimage')
-        except Exception as e:
-            print('Error occured saving data')
-            print(e)
-        finally:
-            os.chdir(owd)
-            print('saving data took ' + str(time.time() - st) + ' seconds')
+    # def __saveData(self, image):
+    #     # stage:
+    #     st = time.time()
+    #     owd = os.getcwd()
+    #     try:
+    #         os.chdir(self.h5filepath)
+    #         h5m.createDataset(self.shotfile, 'StagePos', data=self.stage.getPos())
+    #         for key, val in self.stage.getStageParameters().items():
+    #             h5m.setMetadata(self.shotfile, str(key), str(val), path='StagePos')
+    #         h5m.createDataset(self.shotfile, 'BFSimage', data=image)
+    #         h5m.setMetadataFromDict(self.shotfile, self.bfs.getDeviceParams(), path='BFSimage')
+    #     except Exception as e:
+    #         print('Error occured saving data')
+    #         print(e)
+    #     finally:
+    #         os.chdir(owd)
+    #         print('saving data took ' + str(time.time() - st) + ' seconds')
+
+    def __saveStageData(self):
+        stagedict = {}
+        datafilename = 'stage_shot_' + '0' * (4-len(str(self.shotnum))) + str(self.shotnum) + '.npy'
+        stagedict['diagnosticname'] = 'Motorized 2-Axis Stage'
+        stagedict['metadata'] = self.stage.getStageParameters()
+        stagedict['data'] = self.stage.getPos()
+        print(self.tempdatapath+datafilename)
+        np.save(self.tempdatapath+datafilename, stagedict)
 
     def __launchStageControl(self):
         """
@@ -493,8 +513,7 @@ class ControlHub:
     def __saveTempData(self):
         """
         Saves temp data to temp file, if program is currently running it calls itself every 1000ms
-        # todo: implement different method for finding lost position - right now if there
-                are duplicates it will break ://
+        todo: implement different method for finding lost position - right now if there are duplicates it will break ://
         :return: None
         """
         if self.temp_save_running:

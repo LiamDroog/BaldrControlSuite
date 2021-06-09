@@ -146,9 +146,9 @@ class TwoAxisStage:
         # self.file_run.grid(row=4, column=4, sticky='new')
         # self.file_run.configure(width=self.buttonx)
 
-        # self.kill_btn = tk.Button(master=self.window, text='Kill', command=self.killSwitch)
-        # self.kill_btn.grid(row=4, column=5, sticky='new')
-        # self.kill_btn.configure(width=self.buttonx)
+        self.kill_btn = tk.Button(master=self.window, text='')
+        self.kill_btn.grid(row=2, column=5, sticky='nsew')
+        self.kill_btn.configure(width=self.buttonx)
 
         self.increment_btn = tk.Button(master=self.window, text='G91', command=self.setG91)
         self.increment_btn.grid(row=1, column=1, sticky='nsew')
@@ -170,10 +170,10 @@ class TwoAxisStage:
         self.set_home.grid(row=1, column=4, sticky='nsew')
         self.set_home.configure(width=self.buttonx, height=self.buttony)
 
-        self.start_from_death_btn = tk.Button(master=self.window, text='No temp\nfile found')
-        self.start_from_death_btn.grid(row=2, column=5, sticky='nesw')
-        self.start_from_death_btn['font'] = font.Font(size=10)
-        self.start_from_death_btn.configure(width=self.buttonx, height=self.buttony)
+        # self.start_from_death_btn = tk.Button(master=self.window, text='No temp\nfile found')
+        # self.start_from_death_btn.grid(row=2, column=5, sticky='nesw')
+        # self.start_from_death_btn['font'] = font.Font(size=10)
+        # self.start_from_death_btn.configure(width=self.buttonx, height=self.buttony)
 
         self.output = tk.Listbox(master=self.window)
         self.output.grid(columnspan=4, rowspan=self.grid[1]-6, row=1, column=6, sticky='nsew')
@@ -181,7 +181,7 @@ class TwoAxisStage:
         self.window.bind('<Return>', (lambda x: self.sendCommand(self.gcode_entry.get(), entry=self.gcode_entry,
                                                                  resetarg=True)))
 
-        self.__setTempFile()
+        #self.__setTempFile()
         self.setKeybinds()
         self.Refresh()
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
@@ -560,11 +560,12 @@ class TwoAxisStage:
 
         :return: None
         """
-        if os.path.exists('temp.npy') or self.tempFile is not None:
-            self.start_from_death_btn.configure(text='Load\nData?', fg='red')
-            self.__blinkButton(self.start_from_death_btn, 'red', 'blue', 1000)
-        else:
-            self.tempFile = 'temp.npy'
+        pass
+        # if os.path.exists('temp.npy') or self.tempFile is not None:
+        #     self.start_from_death_btn.configure(text='Load\nData?', fg='red')
+        #     self.__blinkButton(self.start_from_death_btn, 'red', 'blue', 1000)
+        # else:
+        #     self.tempFile = 'temp.npy'
 
     def __saveTempData(self):
         """
