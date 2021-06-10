@@ -104,7 +104,7 @@ class RunBlackFlyCamera:
 
         while self.isLiveOut:
             image = self.cam.get_array()
-            plt.imshow(image, cmap='gray')
+            plt.imshow(image, cmap='Spectral')
             plt.pause(0.001)
             plt.clf()
 
