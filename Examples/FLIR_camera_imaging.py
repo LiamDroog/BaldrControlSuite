@@ -12,10 +12,9 @@ from BlackFlyCameraClass import RunBlackFlyCamera
 from PIL import Image
 
 if __name__ == '__main__':
-
     ###########################
     serial = '19129388'
-    shotNum = 0
+    shotNum = 3
     LiveView = False
     ###########################
 
@@ -32,7 +31,7 @@ if __name__ == '__main__':
         bfs.start()
         data = bfs.get_image_array()
         im = Image.fromarray(data, 'L')
-        im.show()
+        #im.show()
         im.save('FLIR' + str(shotNum) + '.bmp')
     # stop aquisition
     bfs.stop()
