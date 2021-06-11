@@ -62,6 +62,9 @@ class RunBlackFlyCamera:
     def adjust(self, target, value):
         self.cam.setattr(target, value)
 
+    def get(self, attr):
+        return self.cam.getDeviceParams(attr)
+
     def wait_for_trigger(self):
         pass
 
@@ -95,6 +98,9 @@ class RunBlackFlyCamera:
     def close(self):
         self.cam.close()
 
+    def printInfo(self):
+        self.cam.document()
+
     def liveView(self):
         self.isLiveOut = True
         self.cam.configliveout()
@@ -114,11 +120,6 @@ class RunBlackFlyCamera:
 
 if __name__ == '__main__':
     camera = RunBlackFlyCamera('19129388', 1)
-    camera.start()
-    camera.liveView()
-    # for i in range(50):
-    #     camera.handleTrigger()
-    #     time.sleep(0.5)
-    #     print('imaging')
-    camera.stop()
+    #camera.start()
+    #camera.stop()
     camera.close()
