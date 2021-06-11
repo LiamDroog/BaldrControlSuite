@@ -14,14 +14,23 @@ class FocusingHelper:
             '%dx%d+%d+%d' % (int(self.window.winfo_screenwidth() * 0.15), int(self.window.winfo_screenheight() * 0.15),
                              self.window.winfo_screenwidth() / 4,
                              self.window.winfo_screenheight() / 5))
-        self.button = tk.Button(master=self.window, text='Press me!', command=self.takeimage)
-        self.button.pack(expand=True, fill='both')
-        self.bfs = RunBlackFlyCamera('19129388', 0)
-        self.bfs.adjust('GainAuto', 'Off')
-        self.bfs.adjust('ExposureAuto', 'Off')
-        self.bfs.adjust('ExposureTime', 50)
+        self.window.rowconfigure([i for i in range(5)], minsize=25, weight=1)
+        self.window.columnconfigure([i for i in range(5)], minsize=25, weight=1)
+        self.button = tk.Button(master=self.window, text='Capture Image', command=self.takeimage)
+        self.button.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
+
+        self.exposureinput = tk.Entry(master=self.window)
+        self.exposureinput.grid(row=0, column=2, columnspan=2)
+        self.setexposure = tk.Button(master=self.window, text='Set Exposure Time (us)',
+                                     command=lambda: self.changeparam('ExposureTime', self.exposureinput,
+                                                                      self.setexposure))
+        self.setexposure.grid(row=0, column=5, sticky='nesw')
+        # self.bfs = RunBlackFlyCamera('19129388', 0)
+        # self.bfs.adjust('GainAuto', 'Off')
+        # self.bfs.adjust('ExposureAuto', 'Off')
+        # self.bfs.adjust('ExposureTime', 50)
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
-        selfpxpitch = 4.8
+        self.pxpitch = 4.8
         self.window.mainloop()
 
     def takeimage(self):
@@ -29,6 +38,19 @@ class FocusingHelper:
         im = self.bfs.get_image_array()
         self.analyze(im)
         self.bfs.stop()
+
+    def changeparam(self, target, inputbox, button):
+        try:
+            val = inputbox.get()
+            txt = button['text']
+            self.bfs.adjust(target, val)
+        except:
+            button['text'] = 'Failed to configure output'
+        else:
+            print('Succeeded')
+        finally:
+            self.window.after(4000, lambda: button.configure(text=txt))
+
 
     def analyze(self, dat):
         plt.clf()
@@ -58,14 +80,12 @@ class FocusingHelper:
         plt.xlabel('Pixel Number')
         plt.ylabel('Pixel Number')
         plt.colorbar()
-
-
-
-
         plt.show()
 
     def __on_closing(self):
         self.bfs.close()
         self.window.destroy()
+
+
 if __name__ == '__main__':
     FocusingHelper()
