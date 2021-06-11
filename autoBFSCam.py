@@ -65,6 +65,9 @@ class RunBlackFlyCamera:
     def wait_for_trigger(self):
         pass
 
+    def printInfo(self):
+        self.cam.document()
+
     def handleTrigger(self):
         self.filenum += 1
         self.__saveData(self.cam.get_array())
