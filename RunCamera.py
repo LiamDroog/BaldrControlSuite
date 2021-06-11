@@ -39,7 +39,10 @@ def main():
     print(hbar, '\n')
     # todo: multiprocessing thread for each camera to handle
     #       saving images to
+    camera_list[0].start()
+    camera_list[0].printInfo()
     print(hbar)
+
     for i in camera_list:
         print(('Closing camera ' + str(i.camserial) + '.').center(80))
         i.close()

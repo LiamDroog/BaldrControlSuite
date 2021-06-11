@@ -167,8 +167,12 @@ class Camera:
                 self.camera_methods[name] = PySpin.CCommandPtr(node)
             if pit in self._attr_types:
                 self.camera_attributes[name] = self._attr_types[pit](node)
-
         self.initialized = True
+        # for item, val in self.camera_attributes.items():
+        #     try:
+        #         print(item, ':', val.ToString())
+        #     except AttributeError:
+        #         print(item, ':', val.GetValue())
 
     def __enter__(self):
         self.init()
@@ -326,7 +330,7 @@ class Camera:
             if isinstance(info['access'], str) and 'read' in info['access']:
                 info['value'] = getattr(self, name)
 
-        # print(info)
+        print(info)
         if info.get('access') != 0:
             for attr in ("description", "unit", "min", "max"):
                 fname = "Get" + attr.capitalize()
@@ -407,31 +411,43 @@ class Camera:
 
         return '\n'.join(lines)
 
-    def getDeviceParams(self):
-        if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
-            self.CamProperties['Device serial number'] = self.cam.TLDevice.DeviceSerialNumber.ToString()
-        # Print device display name
-        if PySpin.IsReadable(self.cam.TLDevice.DeviceDisplayName):
-            self.CamProperties['Device display name'] = self.cam.TLDevice.DeviceDisplayName.ToString()
+    # def getDeviceParams(self):
+    #     if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
+    #         self.CamProperties['Device serial number'] = self.cam.TLDevice.DeviceSerialNumber.ToString()
+    #     # Print device display name
+    #     if PySpin.IsReadable(self.cam.TLDevice.DeviceDisplayName):
+    #         self.CamProperties['Device display name'] = self.cam.TLDevice.DeviceDisplayName.ToString()
+    #
+    #     if self.cam.ExposureTime.GetAccessMode() == PySpin.RO or self.cam.ExposureTime.GetAccessMode() == PySpin.RW:
+    #         self.CamProperties['Exposure time'] = self.cam.ExposureTime.ToString()
+    #
+    #     # Print black level
+    #     if PySpin.IsReadable(self.cam.BlackLevel):
+    #         self.CamProperties['Black level'] = self.cam.BlackLevel.ToString()
+    #
+    #     # Print height
+    #     if PySpin.IsReadable(self.cam.Height):
+    #         self.CamProperties['Height'] = self.cam.Height.ToString()
+    #
+    #     if PySpin.IsReadable(self.cam.Gain):
+    #         self.CamProperties['Gain'] = self.cam.Gain.ToString()
+    #
+    #     if PySpin.IsReadable(self.cam.Gamma):
+    #         self.CamProperties['Gamma'] = self.cam.Gamma.ToString()
+    #
+    #     return self.CamProperties
 
-        if self.cam.ExposureTime.GetAccessMode() == PySpin.RO or self.cam.ExposureTime.GetAccessMode() == PySpin.RW:
-            self.CamProperties['Exposure time'] = self.cam.ExposureTime.ToString()
+    def getDeviceParams(self, attribute):
+        # todo: integrate this into metadata collection
+        # with open(file, 'r') as f:
+        #     for i in f:
+        #         j = i.split(':')[0]
+        #         try:
+        #             print(j, ':', self.cam.get(j))
+        #         except:
+        #             continue
+        return getattr(self.cam, attribute).ToString()
 
-        # Print black level
-        if PySpin.IsReadable(self.cam.BlackLevel):
-            self.CamProperties['Black level'] = self.cam.BlackLevel.ToString()
-
-        # Print height
-        if PySpin.IsReadable(self.cam.Height):
-            self.CamProperties['Height'] = self.cam.Height.ToString()
-
-        if PySpin.IsReadable(self.cam.Gain):
-            self.CamProperties['Gain'] = self.cam.Gain.ToString()
-
-        if PySpin.IsReadable(self.cam.Gamma):
-            self.CamProperties['Gamma'] = self.cam.Gamma.ToString()
-
-        return self.CamProperties
 
     def getSerialNumber(self):
         if self.cam.TLDevice.DeviceSerialNumber.GetAccessMode() == PySpin.RO:
