@@ -5,10 +5,18 @@ import time
 import matplotlib.pyplot as plt
 import tkinter as tk
 from BlackFlyCameraClass import RunBlackFlyCamera
-
+from scipy.optimize import curve_fit
+from droogCNC import TwoAxisStage
 
 class FocusingHelper:
+    # todo: logic to sweep across
     def __init__(self):
+
+        self.position_dict = {}
+        self.bounds = [-1, 1]
+        self.steps = 10
+        self.positions = np.linspace(self.bounds[0], self.bounds[1], self.steps)
+        self.stage = TwoAxisStage('COM4', '115200', 'Config/startup.txt')
         self.window = tk.Tk(className='Focus Assist')
         self.window.geometry(
             '%dx%d+%d+%d' % (int(self.window.winfo_screenwidth() * 0.15), int(self.window.winfo_screenheight() * 0.15),
@@ -18,26 +26,31 @@ class FocusingHelper:
         self.window.columnconfigure([i for i in range(5)], minsize=25, weight=1)
         self.button = tk.Button(master=self.window, text='Capture Image', command=self.takeimage)
         self.button.grid(row=0, column=0, rowspan=5, columnspan=2, sticky='nsew')
-
+        self.sweepbutton = tk.Button(master=self.window, text='Sweep focus', command=self.sweepFocusX)
+        self.sweepbutton.grid(row=2, column=0, sticky='nsew')
         self.exposureinput = tk.Entry(master=self.window)
         self.exposureinput.grid(row=0, column=2, columnspan=2)
         self.setexposure = tk.Button(master=self.window, text='Set Exposure Time (us)',
                                      command=lambda: self.changeparam('ExposureTime', self.exposureinput,
                                                                       self.setexposure))
         self.setexposure.grid(row=0, column=5, sticky='nesw')
-        # self.bfs = RunBlackFlyCamera('19129388', 0)
-        # self.bfs.adjust('GainAuto', 'Off')
-        # self.bfs.adjust('ExposureAuto', 'Off')
-        # self.bfs.adjust('ExposureTime', 50)
+        self.bfs = RunBlackFlyCamera('19129388', 0)
+        self.bfs.adjust('GainAuto', 'Off')
+        self.bfs.adjust('ExposureAuto', 'Off')
+        self.bfs.adjust('ExposureTime', 50)
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.pxpitch = 4.8
         self.window.mainloop()
 
+
     def takeimage(self):
         self.bfs.start()
         im = self.bfs.get_image_array()
-        self.analyze(im)
+        (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(im, rfactor=1, plot=False)
+        #self.analyze(im)
         self.bfs.stop()
+        print('fwhm ', 0.5*(fwhmx+fwhmy))
+        return 0.5*(fwhmx+fwhmy)
 
     def changeparam(self, target, inputbox, button):
         try:
@@ -51,8 +64,42 @@ class FocusingHelper:
         finally:
             self.window.after(4000, lambda: button.configure(text=txt))
 
+    def sweepFocusX(self):
+        # see misc test before implement
+        self.goTo(self.bounds[0])
+        for i in self.positions:
+            print('going to %f' % i)
+            self.goTo(i)
+            self.position_dict[i] = self.takeimage()
 
-    def analyze(self, dat):
+        px = self.findFocalPoint()
+        self.goTo(px)
+
+    def goTo(self, point):
+        self.stage.sendCommand('G0 X%2.3f' % point)
+        time.sleep(1)
+
+
+    def findFocalPoint(self):
+        x = []
+        y = []
+        for key, val in sorted(self.position_dict.items()):
+            print(key, val)
+            x.append(key)
+            y.append(val)
+        xi = np.linspace(x[0], x[-1])
+        y = np.interp(xi, x, y)
+
+        popt, _ = curve_fit(self.parabola, xi, y)
+        print('vertex: (%d, %d)' % (popt[1], popt[2]))
+        plt.plot(xi, self.parabola(xi, *popt))
+        plt.show()
+        return popt[1]
+
+    def parabola(self, x, a, b, c):
+        return (a * (x - b) ** 2) + c
+
+    def analyze(self, dat, plot=False):
         plt.clf()
         st = time.time()
         try:

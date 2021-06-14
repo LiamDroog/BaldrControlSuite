@@ -71,7 +71,8 @@ def print_with_indent(level, text):
     if level == 0:
         return
     elif level == 1:
-        dict[text] = ''
+        #dict[text] = ''
+        return
     elif level == 2:
         t = text.split(':')
         if len(t) < 2:
@@ -392,54 +393,54 @@ def print_category_node_and_all_features(node, level):
 
         # Create category node
         node_category = PySpin.CCategoryPtr(node)
-
         # Get and print display name
         display_name = node_category.GetDisplayName()
-        print_with_indent(level, display_name)
 
-        # Retrieve and iterate through all children
-        #
-        # *** NOTES ***
-        # The two nodes that typically have children are category nodes and
-        # enumeration nodes. Throughout the examples, the children of category nodes
-        # are referred to as features while the children of enumeration nodes are
-        # referred to as entries. Keep in mind that enumeration nodes can be cast as
-        # category nodes, but category nodes cannot be cast as enumerations.
-        for node_feature in node_category.GetFeatures():
+        if display_name in ['Device Control', 'Image Format Control', 'Analog Control', 'Acquisition Control', 'Root']:
+            print_with_indent(level, display_name)
 
-            # Ensure node is available and readable
-            if not PySpin.IsAvailable(node_feature) or not PySpin.IsReadable(node_feature):
-                continue
-
-            # Category nodes must be dealt with separately in order to retrieve subnodes recursively.
-            if node_feature.GetPrincipalInterfaceType() == PySpin.intfICategory:
-                result &= print_category_node_and_all_features(node_feature, level + 1)
-
-            # Cast all non-category nodes as value nodes
+            # Retrieve and iterate through all children
             #
             # *** NOTES ***
-            # If dealing with a variety of node types and their values, it may be
-            # simpler to cast them as value nodes rather than as their individual types.
-            # However, with this increased ease-of-use, functionality is sacrificed.
-            elif CHOSEN_READ == ReadType.VALUE:
-                result &= print_value_node(node_feature, level + 1)
+            # The two nodes that typically have children are category nodes and
+            # enumeration nodes. Throughout the examples, the children of category nodes
+            # are referred to as features while the children of enumeration nodes are
+            # referred to as entries. Keep in mind that enumeration nodes can be cast as
+            # category nodes, but category nodes cannot be cast as enumerations.
+            for node_feature in node_category.GetFeatures():
+                # Ensure node is available and readable
+                if not PySpin.IsAvailable(node_feature) or not PySpin.IsReadable(node_feature):
+                    continue
 
-            # Cast all non-category nodes as actual types
-            elif CHOSEN_READ == ReadType.INDIVIDUAL:
-                if node_feature.GetPrincipalInterfaceType() == PySpin.intfIString:
-                    result &= print_string_node(node_feature, level + 1)
-                elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIInteger:
-                    result &= print_integer_node(node_feature, level + 1)
-                elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIFloat:
-                    result &= print_float_node(node_feature, level + 1)
-                elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIBoolean:
-                    result &= print_boolean_node(node_feature, level + 1)
-                elif node_feature.GetPrincipalInterfaceType() == PySpin.intfICommand:
-                    result &= print_command_node(node_feature, level + 1)
-                elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIEnumeration:
-                    result &= print_enumeration_node_and_current_entry(node_feature, level + 1)
+                # Category nodes must be dealt with separately in order to retrieve subnodes recursively.
+                if node_feature.GetPrincipalInterfaceType() == PySpin.intfICategory:
+                    result &= print_category_node_and_all_features(node_feature, level + 1)
 
-        print('')
+                # Cast all non-category nodes as value nodes
+                #
+                # *** NOTES ***
+                # If dealing with a variety of node types and their values, it may be
+                # simpler to cast them as value nodes rather than as their individual types.
+                # However, with this increased ease-of-use, functionality is sacrificed.
+                elif CHOSEN_READ == ReadType.VALUE:
+                    result &= print_value_node(node_feature, level + 1)
+
+                # Cast all non-category nodes as actual types
+                elif CHOSEN_READ == ReadType.INDIVIDUAL:
+                    if node_feature.GetPrincipalInterfaceType() == PySpin.intfIString:
+                        result &= print_string_node(node_feature, level + 1)
+                    elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIInteger:
+                        result &= print_integer_node(node_feature, level + 1)
+                    elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIFloat:
+                        result &= print_float_node(node_feature, level + 1)
+                    elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIBoolean:
+                        result &= print_boolean_node(node_feature, level + 1)
+                    elif node_feature.GetPrincipalInterfaceType() == PySpin.intfICommand:
+                        result &= print_command_node(node_feature, level + 1)
+                    elif node_feature.GetPrincipalInterfaceType() == PySpin.intfIEnumeration:
+                        result &= print_enumeration_node_and_current_entry(node_feature, level + 1)
+
+            print('')
 
     except PySpin.SpinnakerException as ex:
         print('Error: %s' % ex)
@@ -471,11 +472,11 @@ def run_single_camera(cam):
         # camera initialization is unnecessary. It provides mostly immutable
         # information fundamental to the camera such as the serial number,
         # vendor, and model.
-        print('\n*** PRINTING TRANSPORT LAYER DEVICE NODEMAP *** \n')
-
-        nodemap_gentl = cam.GetTLDeviceNodeMap()
-
-        result &= print_category_node_and_all_features(nodemap_gentl.GetNode('Root'), level)
+        # print('\n*** PRINTING TRANSPORT LAYER DEVICE NODEMAP *** \n')
+        #
+        # nodemap_gentl = cam.GetTLDeviceNodeMap()
+        #
+        # result &= print_category_node_and_all_features(nodemap_gentl.GetNode('Root'), level)
 
         # Retrieve TL stream nodemap
         #
@@ -485,11 +486,11 @@ def run_single_camera(cam):
         # provides information on the camera's streaming performance at any
         # given moment. Having this information available on the transport layer
         # allows the information to be retrieved without affecting camera performance.
-        print('*** PRINTING TL STREAM NODEMAP ***\n')
-
-        nodemap_tlstream = cam.GetTLStreamNodeMap()
-
-        result &= print_category_node_and_all_features(nodemap_tlstream.GetNode('Root'), level)
+        # print('*** PRINTING TL STREAM NODEMAP ***\n')
+        #
+        # nodemap_tlstream = cam.GetTLStreamNodeMap()
+        #
+        # result &= print_category_node_and_all_features(nodemap_tlstream.GetNode('Root'), level)
 
         # Initialize camera
         #
@@ -589,6 +590,7 @@ def main():
 
 
 if __name__ == '__main__':
+    import time
     if main():
         print(dict)
         sys.exit(0)

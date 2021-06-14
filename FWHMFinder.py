@@ -37,7 +37,7 @@ def lineout_x(data):
         for i in range(len(data)):
             total += data[i][j]
         avg_arr.append(total / length)
-    print('FWHM from un-normalized std: ', np.std(avg_arr))
+    #print('FWHM from un-normalized std: ', np.std(avg_arr))
     return normalize(avg_arr)
 
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
     st = time.time()
     try:
-        (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(dat, rfactor=1, plot=False)
+        (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(dat, rfactor=1, plot=True)
     except:
         print('Could not fit data')
         plt.text(0, -65, 'FWHM Values could not be obtained')

@@ -72,24 +72,27 @@ class FileBrowser:
         self.currentfile_label = tk.Label(master=self.window, text='Current file: ')
         self.currentfile_label.grid(row=self.anchorPos[0] + 1, column=self.anchorPos[1] + 5, columnspan=10, sticky='w')
 
-        self.currentfile_tree = tk.Listbox(master=self.window, bg='#F0F0F0')
-        self.currentfile_tree.grid(row=self.anchorPos[0]+2, column=self.anchorPos[1]+4,
-                                   columnspan=6, rowspan=6, sticky='nsew')
+        self.currentfilemethods = tk.Frame(master=self.window, bg='grey')
+        self.currentfilemethods.grid(row=self.anchorPos[0] + 2, column=self.anchorPos[1] + 4,
+                                     columnspan=6, rowspan=6, sticky='nsew')
+        self.tree_btn = tk.Button(master=self.currentfilemethods, text='Tree',
+                                  command=lambda: self.__tree(self.currentfile))
+        self.tree_btn.pack()
         self.__parseHelp()
 
         self.headstr = ['       __  __    ______ _           __    ____    ______  _             __',
-                 '      / / / /   / ____/  | |       / /   /  _/   / ____/  | |           / /',
-                 '    / /_/  /  /___ \     | |     / /    / /    / __/        | |   /|    / / ',
-                 '  / __  /   ____/ /      | |  / /   _/ /    / /___         | |  / |  / /  ',
-                 '/_/ /_/  /_____/       |___/   /___/  /_____/        |__/|__/   ']
+                        '      / / / /   / ____/  | |       / /   /  _/   / ____/  | |           / /',
+                        '    / /_/  /  /___ \     | |     / /    / /    / __/        | |   /|    / / ',
+                        '  / __  /   ____/ /      | |  / /   _/ /    / /___         | |  / |  / /  ',
+                        '/_/ /_/  /_____/       |___/   /___/  /_____/        |__/|__/   ']
         for i in self.headstr:
-            self.__sendOutput(i, head=' '*8)
+            self.__sendOutput(i, head=' ' * 8)
         self.__sendOutput(time.asctime(), head='>> ')
         self.__sendOutput('Written by Liam Droog', head='>> ')
         self.__sendOutput("HDF5 Methods Initialized", head='>> ')
         self.window.protocol("WM_DELETE_WINDOW", self.__onClose)
-        self.window.geometry('800x400+%d+%d' % (self.window.winfo_screenwidth()/4 + 810,
-                                                self.window.winfo_screenheight()/5 + 440))
+        self.window.geometry('800x400+%d+%d' % (self.window.winfo_screenwidth() / 4 + 810,
+                                                self.window.winfo_screenheight() / 5 + 440))
 
     def start(self):
         """
@@ -258,7 +261,7 @@ class FileBrowser:
         """
         self.output.delete(0, tk.END)
         for i in self.headstr:
-            self.__sendOutput(i, head=' '*8)
+            self.__sendOutput(i, head=' ' * 8)
         self.__sendOutput('Written by Liam Droog', head='>> ')
 
     def __ls(self):
@@ -420,13 +423,16 @@ class FileBrowser:
         :param filename: target filename, string
         :return: None
         """
-        if os.path.exists(filename):
-            with h5py.File(filename, mode='a') as h5f:
-                self.__getMetadata(filename)
-                h5f.visititems(self.__print_attrs)
-        else:
-            self.__sendOutput('File does not exist')
-
+        try:
+            if os.path.exists(filename):
+                with h5py.File(filename, mode='a') as h5f:
+                    self.__getMetadata(filename)
+                    h5f.visititems(self.__print_attrs)
+            else:
+                self.__sendOutput('File does not exist')
+        except:
+            print('error with tree')
+            self.__sendOutput('Error generating tree - Have you selected a file?')
     def __outputTree(self, filename):
         """
         Not operational. Not sure if this is needed in the end product
