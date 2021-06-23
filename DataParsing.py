@@ -1,5 +1,5 @@
 import multiprocessing
-from CameraDaemon import pollFiles
+from DiagnosticDaemon import pollFiles
 import os
 
 

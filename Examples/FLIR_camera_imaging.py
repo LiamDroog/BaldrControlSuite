@@ -14,7 +14,7 @@ from PIL import Image
 if __name__ == '__main__':
     ###########################
     serial = '19129388'
-    shotNum = 3
+    shotNum = 5
     LiveView = False
     ###########################
 
@@ -23,11 +23,14 @@ if __name__ == '__main__':
     # begin aquisition
     if LiveView:
         # doesn't need a cam.start() call, but needs a stop() call
+        bfs.adjust('GainAuto', 'Off')
+        bfs.adjust('ExposureAuto', 'Off')
+        bfs.adjust('ExposureTime', 5000)
         bfs.liveView()
     else:
         bfs.adjust('GainAuto', 'Off')
         bfs.adjust('ExposureAuto', 'Off')
-        bfs.adjust('ExposureTime', 50)
+        bfs.adjust('ExposureTime', 5000)
         bfs.start()
         data = bfs.get_image_array()
         im = Image.fromarray(data, 'L')

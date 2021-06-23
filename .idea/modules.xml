@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/BaldrControlHub py3.8.iml" filepath="$PROJECT_DIR$/.idea/BaldrControlHub py3.8.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../LIBS_Stage_Control/.idea/LIBS_Stage_Control.iml" filepath="$PROJECT_DIR$/../LIBS_Stage_Control/.idea/LIBS_Stage_Control.iml" />
     </modules>
   </component>
 </project>

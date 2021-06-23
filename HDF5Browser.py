@@ -72,12 +72,12 @@ class FileBrowser:
         self.currentfile_label = tk.Label(master=self.window, text='Current file: ')
         self.currentfile_label.grid(row=self.anchorPos[0] + 1, column=self.anchorPos[1] + 5, columnspan=10, sticky='w')
 
-        self.currentfilemethods = tk.Frame(master=self.window, bg='grey')
-        self.currentfilemethods.grid(row=self.anchorPos[0] + 2, column=self.anchorPos[1] + 4,
-                                     columnspan=6, rowspan=6, sticky='nsew')
-        self.tree_btn = tk.Button(master=self.currentfilemethods, text='Tree',
-                                  command=lambda: self.__tree(self.currentfile))
-        self.tree_btn.pack()
+        # self.currentfilemethods = tk.Frame(master=self.window, bg='grey')
+        # self.currentfilemethods.grid(row=self.anchorPos[0] + 2, column=self.anchorPos[1] + 4,
+        #                              columnspan=6, rowspan=6, sticky='nsew')
+        # self.tree_btn = tk.Button(master=self.currentfilemethods, text='Tree',
+        #                           command=lambda: self.__tree(self.currentfile))
+        # self.tree_btn.pack()
         self.__parseHelp()
 
         self.headstr = ['       __  __    ______ _           __    ____    ______  _             __',

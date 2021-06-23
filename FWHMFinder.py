@@ -25,7 +25,7 @@ def lineout_y(data):
         for j in range(len(data[i])):
             total += data[i][j]
         avg_arr.append(total / len(data[i]))
-    print('FWHM from un-normalized std: ', np.std(avg_arr))
+    #print('FWHM from un-normalized std: ', np.std(avg_arr))
     return normalize(avg_arr)
 
 def lineout_x(data):
@@ -117,12 +117,36 @@ def __get_FWHM(x, data):
 
 if __name__ == '__main__':
     pxpitch = 4.8   # micron
-    dat = np.asarray(Image.open('Examples/FLIR3.bmp'))
+    dat = np.asarray(Image.open('Examples/FLIR2.bmp'))
 
     st = time.time()
     try:
-        (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(dat, rfactor=1, plot=True)
-    except:
+        (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(dat, rfactor=1, plot=False)
+
+        x = np.linspace(0, len(dat[0]), len(dat[0]))
+        y = np.linspace(0, len(dat), len(dat))
+
+        # xx = gauss(x, *xopt)
+        # yy = gauss(y, *yopt)
+        # z = np.zeros((xx.shape[0], yy.shape[0]))
+        # for i in range(len(xx) - 1):
+        #     for j in range(len(yy) - 1):
+        #         z[i][j] = xx[i]+yy[j]
+        #
+        #
+        # z = z.transpose()
+        # X, Y = np.meshgrid(x, y)
+        #
+        # print(X.shape, Y.shape, z.shape)
+        #
+        # fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+        # #ax.plot_wireframe(x, y, dat)
+        # print(X.shape, Y.shape, z.shape)
+        # surf = ax.plot_surface(X, Y, z, cmap='Spectral')
+        # plt.show()
+
+    except Exception as e:
+        print(e)
         print('Could not fit data')
         plt.text(0, -65, 'FWHM Values could not be obtained')
     else:

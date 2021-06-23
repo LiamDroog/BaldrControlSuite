@@ -20,7 +20,7 @@ class TwoAxisStage:
     def __init__(self, port, baud, startupfile):
         self.s = None
         self.window = tk.Toplevel()
-        self.window.title('Plasma n Lasers')
+        self.window.title('Stage Control')
         self.pos = [0., 0.]
         self.currentpos = 'X0 Y0'
         self.rate = 1

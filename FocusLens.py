@@ -13,7 +13,7 @@ class FocusingHelper:
     def __init__(self):
 
         self.position_dict = {}
-        self.bounds = [-1, 1]
+        self.bounds = [-10, 10]
         self.steps = 10
         self.positions = np.linspace(self.bounds[0], self.bounds[1], self.steps)
         self.stage = TwoAxisStage('COM4', '115200', 'Config/startup.txt')
@@ -37,7 +37,7 @@ class FocusingHelper:
         self.bfs = RunBlackFlyCamera('19129388', 0)
         self.bfs.adjust('GainAuto', 'Off')
         self.bfs.adjust('ExposureAuto', 'Off')
-        self.bfs.adjust('ExposureTime', 50)
+        self.bfs.adjust('ExposureTime', 6)
         self.window.protocol("WM_DELETE_WINDOW", self.__on_closing)
         self.pxpitch = 4.8
         self.window.mainloop()
@@ -49,7 +49,7 @@ class FocusingHelper:
         (fwhmx, fwhmy), (xopt, yopt) = get_fwhm(im, rfactor=1, plot=False)
         #self.analyze(im)
         self.bfs.stop()
-        print('fwhm ', 0.5*(fwhmx+fwhmy))
+        print('FWHM: ', 0.5*(fwhmx+fwhmy))
         return 0.5*(fwhmx+fwhmy)
 
     def changeparam(self, target, inputbox, button):
@@ -66,9 +66,10 @@ class FocusingHelper:
 
     def sweepFocusX(self):
         # see misc test before implement
+        self.stage.sendCommand('G90')
         self.goTo(self.bounds[0])
         for i in self.positions:
-            print('going to %f' % i)
+            print('Going to %f' % i)
             self.goTo(i)
             self.position_dict[i] = self.takeimage()
 
@@ -88,11 +89,12 @@ class FocusingHelper:
             x.append(key)
             y.append(val)
         xi = np.linspace(x[0], x[-1])
-        y = np.interp(xi, x, y)
+        yi = np.interp(xi, x, y)
 
-        popt, _ = curve_fit(self.parabola, xi, y)
-        print('vertex: (%d, %d)' % (popt[1], popt[2]))
+        popt, _ = curve_fit(self.parabola, xi, yi)
+        print('vertex: (%f, %f)' % (popt[1], popt[2]))
         plt.plot(xi, self.parabola(xi, *popt))
+        plt.scatter(x, y)
         plt.show()
         return popt[1]
 

@@ -33,7 +33,49 @@ class AddDiagnosticFrame:
 
         self.folders = ttk.Notebook(master=self.master)
 
-        # ########## FLIR
+        # # ########## FLIR
+        # self.FLIRparams = {}
+        # self.FLIRsubframe = tk.Frame(master=self.folders, relief='groove', borderwidth=2)
+        # self.FLIRsubframe.rowconfigure(list(i for i in range(16)), minsize=1, weight=1)
+        # self.FLIRsubframe.columnconfigure(list(i for i in range(16)), minsize=1, weight=1)
+        # self.FLIRsubframe.grid(row=0, column=0, rowspan=9, columnspan=16, sticky='nsew')
+        #
+        # # list of availible diagnostics
+        # self.dlist = [i+1 for i in range(num)]
+        # self.FLIRselected_diagnostic = tk.IntVar()
+        # self.FLIRselected_diagnostic.set(1)
+        #
+        # self.dropdown = tk.OptionMenu(self.FLIRsubframe, self.FLIRselected_diagnostic, *self.dlist)
+        # self.dlabel = tk.Label(master=self.FLIRsubframe, text='Diagnostic Number:')
+        # self.dlabel.grid(row=0, column=0, sticky='ew')
+        # self.dropdown.grid(row=0, column=1, sticky='we')
+        #
+        # self.cameraname = tk.Label(master=self.FLIRsubframe, text='Name:')
+        # self.cameraname.grid(row=1, column=0, sticky='ew')
+        # self.cameranameentry = tk.Entry(master=self.FLIRsubframe)
+        # self.cameranameentry.grid(row=1, column=1, sticky='ew')
+        #
+        # self.serialnumber = tk.Label(master=self.FLIRsubframe, text='Serial Number:')
+        # self.serialnumber.grid(row=2, column=0, sticky='ew')
+        # self.serialnumberentry = tk.Entry(master=self.FLIRsubframe)
+        # self.serialnumberentry.grid(row=2, column=1, sticky='ew')
+        #
+        # self.flirfilepath = tk.Label(master=self.FLIRsubframe, text='Data File Path')
+        # self.flirfilepath.grid(row=3, column=0, sticky='ew')
+        # self.flirfilepathentry = tk.Entry(master=self.FLIRsubframe)
+        # self.flirfilepathentry.grid(row=3, column=1, sticky='ew')
+        #
+        # self.FLIRstartenable = enableOnStartupButton(self.FLIRsubframe, 0, 4)
+        #
+        # self.addFlirButton = tk.Button(master=self.FLIRsubframe, text='Apply Changes',
+        #                                command=self.__setFLIRParams)
+        # self.addFlirButton.grid(row=5, column=0, columnspan=5)
+
+        # name / intended  use?
+        # data to expect?
+        # location to store?
+
+        # ########## General
         self.FLIRparams = {}
         self.FLIRsubframe = tk.Frame(master=self.folders, relief='groove', borderwidth=2)
         self.FLIRsubframe.rowconfigure(list(i for i in range(16)), minsize=1, weight=1)
@@ -65,15 +107,18 @@ class AddDiagnosticFrame:
         self.flirfilepathentry = tk.Entry(master=self.FLIRsubframe)
         self.flirfilepathentry.grid(row=3, column=1, sticky='ew')
 
-        self.FLIRstartenable = enableOnStartupButton(self.FLIRsubframe, 0, 4)
+        self.datatypelabel = tk.Label(master=self.FLIRsubframe, text='Data Type:')
+        self.datatypelabel.grid(row=4, column=0, sticky='ew')
+        self.datatypevar = tk.StringVar()
+        self.datatypelist = ['Image', 'Spectra', 'Interferometer', 'Other']
+        self.datatypemenu = tk.OptionMenu(self.FLIRsubframe, self.datatypevar, *self.datatypelist)
+        self.datatypemenu.grid(row=4, column=1, sticky='ew')
+
+        self.FLIRstartenable = enableOnStartupButton(self.FLIRsubframe, 0, 5)
 
         self.addFlirButton = tk.Button(master=self.FLIRsubframe, text='Apply Changes',
                                        command=self.__setFLIRParams)
-        self.addFlirButton.grid(row=5, column=0, columnspan=5)
-
-        # name / intended  use?
-        # data to expect?
-        # location to store?
+        self.addFlirButton.grid(row=6, column=0, columnspan=3, sticky='ew')
 
 
         # ######## STAGE
@@ -114,6 +159,8 @@ class AddDiagnosticFrame:
         self.folders.grid(row=0, column=0, rowspan=9, columnspan=16, sticky='nsew')
 
     def __setFLIRParams(self):
+        # todo: set new params in diag file
+        #       implement new methods to determine if we can pull image data from whatever and stuff
         # check if diagnostics file exists
         if os.path.exists(self.diagnosticsFile):
             diagnostics = np.load(self.diagnosticsFile, allow_pickle='True')
