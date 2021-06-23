@@ -120,8 +120,8 @@ class ControlHub:
 
         # Placeholder for triggering. Trigger signal will go to stanford box IRL.
         # this allows to test functionality with a mock trigger going to a sensor
-        self.bfs = RunBlackFlyCamera('19129388', self.shotnum)
-        self.bfs.adjust('GainAuto', 'Off')
+        # self.bfs = RunBlackFlyCamera('19129388', self.shotnum)
+        # self.bfs.adjust('GainAuto', 'Off')
 
         # Com port
         comlist = [comport.device for comport in serial.tools.list_ports.comports()]
@@ -234,7 +234,7 @@ class ControlHub:
         # self.window.destroy()
         for i in self.watchDogList:
             i.kill()
-        self.bfs.close()
+        # self.bfs.close()
         self.h5writer.kill()
         self.window.destroy()
 
@@ -285,9 +285,9 @@ class ControlHub:
         # self.__saveData(image)
 
     def __trigger(self):
-        self.bfs.start()
-        self.bfs.handleTrigger()
-        self.bfs.stop()
+        # self.bfs.start()
+        # self.bfs.handleTrigger()
+        # self.bfs.stop()
         if self.stage.isOpen():
             self.__saveStageData()
 
