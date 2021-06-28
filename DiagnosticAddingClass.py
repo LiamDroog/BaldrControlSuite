@@ -3,6 +3,7 @@ from tkinter import ttk
 import os
 import numpy as np
 
+
 class AddDiagnosticFrame:
     """
         Class to facilitate the addition and removal of diagnostic systems within the control hub.
@@ -83,7 +84,7 @@ class AddDiagnosticFrame:
         self.FLIRsubframe.grid(row=0, column=0, rowspan=9, columnspan=16, sticky='nsew')
 
         # list of availible diagnostics
-        self.dlist = [i+1 for i in range(num)]
+        self.dlist = [i + 1 for i in range(num)]
         self.FLIRselected_diagnostic = tk.IntVar()
         self.FLIRselected_diagnostic.set(1)
 
@@ -120,7 +121,6 @@ class AddDiagnosticFrame:
                                        command=self.__setFLIRParams)
         self.addFlirButton.grid(row=6, column=0, columnspan=3, sticky='ew')
 
-
         # ######## STAGE
         self.Stagesubframe = tk.Frame(master=self.folders, relief='groove', borderwidth=2)
         self.Stagesubframe.rowconfigure(list(i for i in range(16)), minsize=1, weight=1)
@@ -141,7 +141,8 @@ class AddDiagnosticFrame:
         self.rmdropdown.grid(row=0, column=1, sticky='we')
 
         self.removeParameterButton = tk.Button(master=self.remove_parameter_subframe, text='Remove Parameter',
-                                               command=lambda: self.__removeDiagnostic(self.rmselected_diagnostic.get()))
+                                               command=lambda: self.__removeDiagnostic(
+                                                   self.rmselected_diagnostic.get()))
         self.rmCheck2 = tk.Checkbutton(master=self.remove_parameter_subframe,
                                        text='I acknowledge that this diagnostic will cease to exist and '
                                             'need to be re-entered in the future',
@@ -149,11 +150,12 @@ class AddDiagnosticFrame:
                                                                                        columnspan=5, sticky='we'))
         self.rmCheck1 = tk.Checkbutton(master=self.remove_parameter_subframe,
                                        text='I want to remove this diagnostic',
-                                       command=lambda: self.rmCheck2.grid(row=2, column=0, columnspan=10, sticky='w'))
+                                       command=lambda: self._toggleDiagnostic('show', self.rmCheck2, posy=2, posx=0))
+        # lambda: self.rmCheck2.grid(row=2, column=0, columnspan=10, sticky='w')
         self.rmCheck1.grid(row=1, column=0, sticky='w')
 
         # ######## PACK
-        self.folders.add(self.FLIRsubframe, text='FLIR Camera')
+        self.folders.add(self.FLIRsubframe, text='General Diagnostic')
         self.folders.add(self.Stagesubframe, text='2 Axis Stage (LIBS ONLY)')
         self.folders.add(self.remove_parameter_subframe, text='Remove Parameters')
         self.folders.grid(row=0, column=0, rowspan=9, columnspan=16, sticky='nsew')
@@ -195,6 +197,7 @@ class AddDiagnosticFrame:
         # add pairs to dictionary from input boxes
         self.FLIRparams['Diagnostic Name'] = self.cameranameentry.get()
         self.FLIRparams['Serial Number'] = self.serialnumberentry.get()
+        self.FLIRparams['DataType'] = self.datatypevar.get()
         self.FLIRparams['File Path'] = self.flirfilepathentry.get()
         self.FLIRparams['Enabled On Startup'] = self.FLIRstartenable.isEnabled()
 
@@ -211,6 +214,14 @@ class AddDiagnosticFrame:
         d = np.load(self.diagnosticsFile, allow_pickle=True).item()
         d.pop(num)
         np.save(self.diagnosticsFile, d)
+
+    def _toggleDiagnostic(self, opt, target, posx=None, posy=None):
+        try:
+            if opt == 'show':
+                target.grid()
+        except:
+            pass
+
 
 class enableOnStartupButton:
     # todo: Check if enabled and then activate within controlhub
