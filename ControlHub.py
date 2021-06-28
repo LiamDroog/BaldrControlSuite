@@ -171,23 +171,47 @@ class ControlHub:
         self.programfileinput.grid(row=9, column=0, rowspan=1, columnspan=3, sticky='ew')
         self.getprogramfilebutton.grid(row=9, column=3, sticky='ew')
         self.runprogrambutton.grid(row=9, column=4, sticky='ew')
-
-        # shoot the laser button
-        self.lasertext = tk.Label(master=self.launch_frame, text='Laser Controls')
-        self.lasertext.grid(row=10, column=0, columnspan=3, sticky='ew')
-        self.armLaser_btn = tk.Button(master=self.launch_frame, text='Arm Laser', fg='#C02f1d',
-                                      command=self.__armLaser)
-        self.armLaser_btn.grid(column=0, columnspan=2, row=11, sticky='nsew')
-
-        self.shootLaser_btn = tk.Button(master=self.launch_frame, text='Fire Laser', bg='#BEBEBE')
-        self.shootLaser_btn.grid(column=0, columnspan=2, row=12, sticky='nsew')
-        self.shootLaser_btn['state'] = tk.DISABLED
-
         self.revive_button = tk.Button(master=self.launch_frame)
 
+        # ################ Shot Setup Frame ################
+
+        self.shot_setup_frame = tk.Frame(master=self.control_tab, relief='groove', borderwidth=3)
+        self.shot_setup_frame.columnconfigure([1, 2, 3], minsize=1, weight=1)
+        self.shot_setup_frame.grid(row=1, column=3, rowspan=9, columnspan=4, sticky='nsew')
+        # shoot the laser button
+        self.manualcontrol = tk.Label(master=self.shot_setup_frame, text='Manual Laser Firing', bg='#e3e3e3')
+        self.manualcontrol.grid(row=0, column=0, columnspan=4, sticky='ew')
+
+        self.armLaser_btn = tk.Button(master=self.shot_setup_frame, text='Arm Laser', fg='#C02f1d',
+                                      command=self.__armLaser)
+        self.armLaser_btn.grid(column=0, columnspan=4, row=1, sticky='ew')
+
+        self.shootLaser_btn = tk.Button(master=self.shot_setup_frame, text='Fire Laser', bg='#BEBEBE')
+        self.shootLaser_btn.grid(column=0, columnspan=4, row=2, sticky='ew')
+        self.shootLaser_btn['state'] = tk.DISABLED
+
+        self.autocontrol = tk.Label(master=self.shot_setup_frame, text='Automatic Laser Firing', bg='#e3e3e3')
+        self.autocontrol.grid(row=3, column=0, columnspan=4, sticky='ew')
+
+        self.repRateLabel = tk.Label(master=self.shot_setup_frame, text='Rep Rate (Hz):')
+        self.repRateLabel.grid(row=4, column=0, sticky='ew')
+        self.repRateEntry = tk.Entry(master=self.shot_setup_frame)
+        self.repRateEntry.grid(row=4, column=1, sticky='ew')
+        self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set', command=self._setRepRate)
+        self.setRepRateButton.grid(row=4, column=2, sticky='ew')
+        self.laserContinuous = tk.Checkbutton(master=self.shot_setup_frame, text='Continuous')
+        self.laserContinuous.grid(row=5, column=0, columnspan=4, sticky='ew')
+        self.numLaserShotslabel = tk.Label(master=self.shot_setup_frame, text='Number of shots:')
+        self.numLaserShotslabel.grid(row=6, column=0, sticky='ew')
+        self.numLaserShotsEntry = tk.Entry(master=self.shot_setup_frame)
+        self.numLaserShotsEntry.grid(row=6, column=1, sticky='ew')
+        self.numLaserShotsSet = tk.Button(master=self.shot_setup_frame, text='Set')
+        self.numLaserShotsSet.grid(row=6, column=2, sticky='ew')
+        # todo:
+        #       Implement the above in a method to parse selection and then implement a daemon to signal the laser
         # ################ READOUT FRAME ################
         self.readout_frame = tk.Frame(master=self.control_tab, relief='groove', borderwidth=3)
-        self.readout_frame.grid(row=1, column=4, rowspan=9, columnspan=9, sticky='nsew')
+        self.readout_frame.grid(row=1, column=12, rowspan=6, columnspan=6, sticky='nsew')
         self.readout_frame.rowconfigure(list(i for i in range(16)), weight=1)
         self.readout_frame.columnconfigure(list(i for i in range(9)), weight=1)
 
@@ -262,6 +286,20 @@ class ControlHub:
             self.shootLaser_btn['state'] = tk.DISABLED
             self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
             self.laserArmed = False
+
+    def _setRepRate(self):
+        rate = self.repRateEntry.get()
+        try:
+            rate = float(rate)
+        except:
+            print('Invalid rate')
+            return
+
+        if rate > 10. or rate < 0.:
+            print('Invalid rate')
+            return
+        self.repRate = rate
+        print('Set rate at ' + str(rate) + 'hz')
 
     def __fireLaser(self):
         """
