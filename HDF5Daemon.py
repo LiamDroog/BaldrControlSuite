@@ -1,12 +1,18 @@
 import asyncio
 import os
 import time
-
 import numpy as np
-
 import HDF5Methods as h5m
 
-
+"""
+########################################################################################################################
+IMPORTANT:
+            Diagnostic files that are saved MUST HAVE AN ENTRY NAMED 'diagnosticname' w/o the apostrophes
+            This is to give it's associated dataset within the shot h5 file a proper name. Otherwise it's all nameless
+            and it'll crash
+            # TODO:
+                    don't crash if nameless
+"""
 def pollFiles(watchdir, movedir):
     """
     runs a poll every so often to check if files exist in a directory, and moves them if they do
