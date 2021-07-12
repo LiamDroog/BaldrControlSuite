@@ -1,3 +1,6 @@
+import os
+os.environ["KMP_WARNINGS"] = "FALSE"
+import sys
 import warnings
 warnings.filterwarnings('ignore')
 import tkinter as tk
@@ -13,14 +16,13 @@ from DiagnosticAddingClass import AddDiagnosticFrame
 import numpy as np
 import serial
 import time
-import os
 from datetime import date
 import PySpin
 import DataParsing
 import WriteDataToHDF5
+from ClockClass import Clock
 from BlackFlyCameraClass import RunBlackFlyCamera
 
-os.system('cls')
 
 # TODO: Change stage such that entire control can operate with or
 #       without the stage being connected. Including data saving.
@@ -35,6 +37,19 @@ class ControlHub:
     """
 
     def __init__(self):
+        os.system('cls')
+        with open('Config/ControlConfig.cfg', 'r') as f:
+            loadingText = []
+            for i in f.readlines():
+                loadingText.append(i.rstrip())
+            import random
+            for i in range(random.randint(0, 4)):
+                print(loadingText.pop(random.randint(0, len(loadingText) - 1)))
+                j = random.choice([10, 25, 50, 100])
+                for i in range(j):
+                    time.sleep(random.uniform(0.0001, 0.01))
+                    self._printProgressBar(i + 1, j, decimals=0, prefix='Progress')
+
         self.window = tk.Tk(className='\Baldr Control Hub')
         self.screenwidth = int(self.window.winfo_screenwidth() * 0.55)
         self.screenheight = int(self.window.winfo_screenheight() * 0.55)
@@ -89,6 +104,8 @@ class ControlHub:
         self.filename = None
         self.stage = None
         self.tempFile = None
+        self.isFiring = False
+        self.repRate = None
         self.stageparameters = {}
         # migrate to class?
         self.system = PySpin.System.GetInstance()
@@ -114,8 +131,8 @@ class ControlHub:
         today = date.today()
         self.h5filepath = 'DataFiles/' + today.strftime("%b-%d-%Y")
         self.tempdatapath = 'DataFiles/queue/'
-        if not self.__createdir(self.h5filepath):
-            print('Shot directory exists already')
+        if self.__createdir(self.h5filepath):
+            print('Shot directory created in ' + self.h5filepath)
         self.__setShotFile()
 
         # Placeholder for triggering. Trigger signal will go to stanford box IRL.
@@ -192,21 +209,27 @@ class ControlHub:
 
         self.autocontrol = tk.Label(master=self.shot_setup_frame, text='Automatic Laser Firing', bg='#e3e3e3')
         self.autocontrol.grid(row=3, column=0, columnspan=4, sticky='ew')
+        self.isAutoFiring = tk.IntVar()
+        self.enableAutofiring = tk.Checkbutton(master=self.shot_setup_frame, text='Enable Auto Firing', var=self.isAutoFiring)
+        self.enableAutofiring.grid(row=4, column=1, sticky='ew')
 
         self.repRateLabel = tk.Label(master=self.shot_setup_frame, text='Rep Rate (Hz):')
-        self.repRateLabel.grid(row=4, column=0, sticky='ew')
+        self.repRateLabel.grid(row=5, column=0, sticky='ew')
         self.repRateEntry = tk.Entry(master=self.shot_setup_frame)
-        self.repRateEntry.grid(row=4, column=1, sticky='ew')
-        self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set', command=self._setRepRate)
-        self.setRepRateButton.grid(row=4, column=2, sticky='ew')
+        self.repRateEntry.grid(row=5, column=1, sticky='ew')
+        # self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set', command=self._setRepRate)
+        self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set',
+                                          command=self._blinkButtons)
+
+        self.setRepRateButton.grid(row=5, column=2, sticky='ew')
         self.laserContinuous = tk.Checkbutton(master=self.shot_setup_frame, text='Continuous')
-        self.laserContinuous.grid(row=5, column=0, columnspan=4, sticky='ew')
+        self.laserContinuous.grid(row=6, column=0, columnspan=4, sticky='ew')
         self.numLaserShotslabel = tk.Label(master=self.shot_setup_frame, text='Number of shots:')
-        self.numLaserShotslabel.grid(row=6, column=0, sticky='ew')
+        self.numLaserShotslabel.grid(row=7, column=0, sticky='ew')
         self.numLaserShotsEntry = tk.Entry(master=self.shot_setup_frame)
-        self.numLaserShotsEntry.grid(row=6, column=1, sticky='ew')
+        self.numLaserShotsEntry.grid(row=7, column=1, sticky='ew')
         self.numLaserShotsSet = tk.Button(master=self.shot_setup_frame, text='Set')
-        self.numLaserShotsSet.grid(row=6, column=2, sticky='ew')
+        self.numLaserShotsSet.grid(row=7, column=2, sticky='ew')
         # todo:
         #       Implement the above in a method to parse selection and then implement a daemon to signal the laser
         # ################ READOUT FRAME ################
@@ -230,6 +253,12 @@ class ControlHub:
         self.cam_lbl.grid(row=4, column=0, columnspan=9, sticky='ew')
         self.cam_lbl['font'] = font.Font(size=14)
         self.camera1.set('Camera Not Connected')
+
+        # This is a test for rep rate stuff
+        self.swbutton1 = tk.Button(master=self.readout_frame, bg='red')
+        self.swbutton2 = tk.Button(master=self.readout_frame, bg='black')
+        self.swbutton1.grid(row=2, column=3, sticky='nsew')
+        self.swbutton2.grid(row=2, column=4, sticky='nsew')
 
         self.window.geometry(
             '%dx%d+%d+%d' % (self.screenwidth, self.screenheight, self.window.winfo_screenwidth() / 4,
@@ -276,6 +305,10 @@ class ControlHub:
         #         self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
         #         self.laserArmed = False
         #         self.bfs.deinit()
+        if not self.repRate and self.isAutoFiring.get():
+            self.autocontrol.config(text='Invalid Rep Rate', fg='Red')
+            self.window.after(5000, lambda: self.autocontrol.config(text='Automatic Laser Firing', fg='black'))
+            return
         if not self.laserArmed:
             self.shootLaser_btn['state'] = tk.ACTIVE
             self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
@@ -518,6 +551,36 @@ class ControlHub:
             self.__fireLaser()
             self.window.after(1000, self.__runProgram)
 
+    def _blinkButtons(self):
+        # broken??
+        try:
+            if not self.isFiring:
+                if self.clock.exists:
+                    return
+        except:
+            pass
+
+        self.isFiring = True
+        if self.isFiring:
+            try:
+                self.clock.sleep()
+            except:
+                self.clock = Clock(int(self.repRateEntry.get()))
+                self.setRepRateButton.config(command=self.stopBlink)
+
+            if self.swbutton1['bg'] == 'red':
+                self.swbutton1.config(bg='black')
+                self.swbutton2.config(bg='red')
+            else:
+                self.swbutton2.config(bg='black')
+                self.swbutton1.config(bg='red')
+            self.window.after(10, self._blinkButtons)
+
+
+    def stopBlink(self):
+        self.isFiring = False
+        self.clock = None
+
     def __finishRun(self):
         """
         removes temp file at end of program run
@@ -685,6 +748,28 @@ class ControlHub:
     def __startH5Watchdog(self):
         self.h5writer = WriteDataToHDF5.HDF5Writer(self.tempdatapath, self.h5filepath)
         self.h5writer.start()
+
+    def _printProgressBar(self, iteration, total, prefix='', suffix='', decimals=2, length=80, fill='█', printEnd="\r"):
+        """
+        Call in a loop to create terminal progress bar
+        @params:
+            iteration   - Required  : current iteration (Int)
+            total       - Required  : total iterations (Int)
+            prefix      - Optional  : prefix string (Str)
+            suffix      - Optional  : suffix string (Str)
+            decimals    - Optional  : positive number of decimals in percent complete (Int)
+            length      - Optional  : character length of bar (Int)
+            fill        - Optional  : bar fill character (Str)
+            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+        """
+        percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+        filledLength = int(length * iteration // total)
+        bar = fill * filledLength + '-' * (length - filledLength)
+        # print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=printEnd)
+        sys.stdout.write(f'\r{prefix} |{bar}| {percent}% {suffix}')
+        # Print New Line on Complete
+        if iteration == total:
+            print()
 
 
 class DiagnosticFrame:

@@ -211,9 +211,16 @@ class AddDiagnosticFrame:
 
     def __removeDiagnostic(self, num):
         # remove specific diag from file
-        d = np.load(self.diagnosticsFile, allow_pickle=True).item()
-        d.pop(num)
-        np.save(self.diagnosticsFile, d)
+        try:
+            d = np.load(self.diagnosticsFile, allow_pickle=True).item()
+            d.pop(num)
+            np.save(self.diagnosticsFile, d)
+            self.removeParameterButton.grid_remove()
+            self.rmCheck2.grid_remove()
+            self.rmCheck1.setvar(tk.FALSE)
+        except:
+            pass
+
 
     def _toggleDiagnostic(self, opt, target, posx=None, posy=None):
         try:
