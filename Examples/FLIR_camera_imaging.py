@@ -15,7 +15,7 @@ if __name__ == '__main__':
     ###########################
     serial = '19129388'
     shotNum = 5
-    LiveView = False
+    LiveView = True
     ###########################
 
     # instantiate camera
