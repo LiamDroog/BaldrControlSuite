@@ -167,7 +167,7 @@ class ControlHub:
 
         self.h5header = tk.Label(master=self.launch_frame, text='HDF5 Files')
         self.h5header.grid(row=5, column=0, columnspan=3, sticky='ew')
-        self.h5filetxt = tk.Label(master=self.launch_frame, text='File: ' + str(self.shotfile))
+        self.h5filetxt = tk.Label(master=self.launch_frame, text='Last File: ' + str(self.shotfile))
         self.h5filetxt.grid(row=6, column=0, columnspan=3)
 
         # file browser gui button
@@ -217,12 +217,13 @@ class ControlHub:
         self.repRateLabel.grid(row=5, column=0, sticky='ew')
         self.repRateEntry = tk.Entry(master=self.shot_setup_frame)
         self.repRateEntry.grid(row=5, column=1, sticky='ew')
-        # self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set', command=self._setRepRate)
-        self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set',
-                                          command=self._blinkButtons)
+        self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set', command=self._setRepRate)
+        # self.setRepRateButton = tk.Button(master=self.shot_setup_frame, text='Set',
+        #                                   command=self._blinkButtons)
 
         self.setRepRateButton.grid(row=5, column=2, sticky='ew')
-        self.laserContinuous = tk.Checkbutton(master=self.shot_setup_frame, text='Continuous')
+        self.isLaserContinuous = tk.IntVar()
+        self.laserContinuous = tk.Checkbutton(master=self.shot_setup_frame, text='Continuous', var=self.isLaserContinuous)
         self.laserContinuous.grid(row=6, column=0, columnspan=4, sticky='ew')
         self.numLaserShotslabel = tk.Label(master=self.shot_setup_frame, text='Number of shots:')
         self.numLaserShotslabel.grid(row=7, column=0, sticky='ew')
@@ -286,6 +287,7 @@ class ControlHub:
         # if messagebox.askokcancel("Quit", "Quit? This will close all windows."):
         # self.window.destroy()
         for i in self.watchDogList:
+            # where were you when watchdogs were kil?
             i.kill()
         # self.bfs.close()
         self.h5writer.kill()
@@ -305,11 +307,19 @@ class ControlHub:
         #         self.shootLaser_btn.config(command=tk.NONE, bg='#BEBEBE', fg='#000000')
         #         self.laserArmed = False
         #         self.bfs.deinit()
-        if not self.repRate and self.isAutoFiring.get():
-            self.autocontrol.config(text='Invalid Rep Rate', fg='Red')
-            self.window.after(5000, lambda: self.autocontrol.config(text='Automatic Laser Firing', fg='black'))
-            return
         if not self.laserArmed:
+            if self.repRate and self.isAutoFiring.get() and self.isLaserContinuous.get():
+                self.shootLaser_btn['state'] = tk.ACTIVE
+                self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
+                self.shootLaser_btn.config(command=self._blinkButtons, bg='#c02f1d', fg='#FFFFFF')
+                self.laserArmed = True
+                return
+
+            if not self.repRate and self.isAutoFiring.get():
+                self.autocontrol.config(text='Invalid Rep Rate', fg='Red')
+                self.window.after(5000, lambda: self.autocontrol.config(text='Automatic Laser Firing', fg='black'))
+                return
+
             self.shootLaser_btn['state'] = tk.ACTIVE
             self.armLaser_btn.config(bg='#228C22', fg='#FFFFFF')
             self.shootLaser_btn.config(command=self.__fireLaser, bg='#c02f1d', fg='#FFFFFF')
@@ -345,9 +355,8 @@ class ControlHub:
         :return: None
         """
         st = time.time()
-        for i in range(10):
-            self.__createShotFile()
-            self.__trigger()
+        self.__createShotFile()
+        #self.__trigger()
         print('Time taken: ', str(time.time() - st))
 
         # image = self.__captureimage()
@@ -359,8 +368,10 @@ class ControlHub:
         # self.bfs.start()
         # self.bfs.handleTrigger()
         # self.bfs.stop()
-        if self.stage.isOpen():
-            self.__saveStageData()
+        # if self.stage.isOpen():
+        #     self.__saveStageData()
+        # self.__saveData(self.__captureimage())
+        pass
 
     # def __saveData(self, image):
     #     # stage:
@@ -368,9 +379,6 @@ class ControlHub:
     #     owd = os.getcwd()
     #     try:
     #         os.chdir(self.h5filepath)
-    #         h5m.createDataset(self.shotfile, 'StagePos', data=self.stage.getPos())
-    #         for key, val in self.stage.getStageParameters().items():
-    #             h5m.setMetadata(self.shotfile, str(key), str(val), path='StagePos')
     #         h5m.createDataset(self.shotfile, 'BFSimage', data=image)
     #         h5m.setMetadataFromDict(self.shotfile, self.bfs.getDeviceParams(), path='BFSimage')
     #     except Exception as e:
@@ -556,17 +564,17 @@ class ControlHub:
         try:
             if not self.isFiring:
                 if self.clock.exists:
+                    self.clock = None
                     return
         except:
             pass
-
         self.isFiring = True
         if self.isFiring:
             try:
                 self.clock.sleep()
             except:
                 self.clock = Clock(int(self.repRateEntry.get()))
-                self.setRepRateButton.config(command=self.stopBlink)
+                self.shootLaser_btn.config(command=self.stopBlink)
 
             if self.swbutton1['bg'] == 'red':
                 self.swbutton1.config(bg='black')
@@ -574,12 +582,12 @@ class ControlHub:
             else:
                 self.swbutton2.config(bg='black')
                 self.swbutton1.config(bg='red')
+            self.__fireLaser()
             self.window.after(10, self._blinkButtons)
-
 
     def stopBlink(self):
         self.isFiring = False
-        self.clock = None
+        # self.clock = None
 
     def __finishRun(self):
         """
@@ -735,7 +743,10 @@ class ControlHub:
                     elif key == 'File Path':
                         target.dir_entry.config(text=val)
                     elif key == 'Enabled On Startup':
-                        target.enabled.set(1)
+                        if val == True:
+                            target.enabled.set(1)
+                        else:
+                            target.enabled.set(0)
 
     def __startFileWatchdogs(self):
         if os.path.exists(self.diagnosticsFile):
