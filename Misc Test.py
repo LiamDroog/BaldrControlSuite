@@ -93,19 +93,9 @@ def printProgressBarheader(header):
 
 
 if __name__ == '__main__':
-    x = []
-    y = []
-    with open('simresults.txt', 'r') as f:
-        for i in f:
-            t = i.rstrip().split(';')
-            x.append(float(t[0].split(':')[-1].strip()))
-            y.append(float(t[1].split(':')[-1].strip()))
-
-    plt.plot(x, y)
-    plt.ylabel('Percent Error')
-    plt.xlabel('Repetition Rate (hz)')
-    plt.axis([max(x), min(x), min(y), max(y)])
-    plt.show()
+    import numpy as np
+    data = np.load('Config/DiagnosticConfig.npy', allow_pickle=True)
+    print(data)
 
     # with open('Config/ControlConfig.cfg', 'r') as f:
     #     loadingText = []
