@@ -168,7 +168,7 @@ class AddDiagnosticFrame:
             diagnostics = np.load(self.diagnosticsFile, allow_pickle='True')
             if len(diagnostics.item().keys()) != 0 and self.FLIRselected_diagnostic.get() in diagnostics.item().keys():
                 # todo: handle overwrite prompt
-                self.addFlirButton.config(text='Diagnostic already exists')
+                self.addFlirButton.config(text='Overwrite Current Parameter?')
                 self.master.after(2000, lambda: self.addFlirButton.config(text='Apply Changes'))
                 return
         else:
@@ -193,6 +193,7 @@ class AddDiagnosticFrame:
         if not os.path.exists(self.flirfilepathentry.get().strip()):
             self.flirfilepath.config(text='Must be valid directory', fg='red')
             self.master.after(3000, lambda: self.flirfilepath.config(text='Data File Path:', fg='black'))
+            return
 
         # add pairs to dictionary from input boxes
         self.FLIRparams['Diagnostic Name'] = self.cameranameentry.get()
@@ -220,7 +221,6 @@ class AddDiagnosticFrame:
             self.rmCheck1.setvar(tk.FALSE)
         except:
             pass
-
 
     def _toggleDiagnostic(self, opt, target, posx=None, posy=None):
         try:
