@@ -239,21 +239,21 @@ class ControlHub:
         self.readout_frame.rowconfigure(list(i for i in range(16)), weight=1)
         self.readout_frame.columnconfigure(list(i for i in range(9)), weight=1)
 
-        self.get_spectra_btn = tk.Button(master=self.readout_frame, text='Get last image',
-                                         command=self.__getCurrentImage)
-        self.get_spectra_btn.grid(row=1, column=0, columnspan=3, sticky='new')
+        # self.get_spectra_btn = tk.Button(master=self.readout_frame, text='Get last image',
+        #                                  command=self.__getCurrentImage)
+        # self.get_spectra_btn.grid(row=1, column=0, columnspan=3, sticky='new')
 
-        self.stage_pos = tk.StringVar()
-        self.stage_pos_lbl = tk.Label(master=self.readout_frame, textvariable=self.stage_pos)
-        self.stage_pos_lbl.grid(row=0, column=0, columnspan=9, sticky='ew')
-        self.stage_pos_lbl['font'] = font.Font(size=18)
-        self.stage_pos.set('Stage Not Connected')
+        # self.stage_pos = tk.StringVar()
+        # self.stage_pos_lbl = tk.Label(master=self.readout_frame, textvariable=self.stage_pos)
+        # self.stage_pos_lbl.grid(row=0, column=0, columnspan=9, sticky='ew')
+        # self.stage_pos_lbl['font'] = font.Font(size=18)
+        # self.stage_pos.set('Stage Not Connected')
 
-        self.camera1 = tk.StringVar()
-        self.cam_lbl = tk.Label(master=self.readout_frame, textvariable=self.camera1)
-        self.cam_lbl.grid(row=4, column=0, columnspan=9, sticky='ew')
-        self.cam_lbl['font'] = font.Font(size=14)
-        self.camera1.set('Camera Not Connected')
+        # self.camera1 = tk.StringVar()
+        # self.cam_lbl = tk.Label(master=self.readout_frame, textvariable=self.camera1)
+        # self.cam_lbl.grid(row=4, column=0, columnspan=9, sticky='ew')
+        # self.cam_lbl['font'] = font.Font(size=14)
+        # self.camera1.set('Camera Not Connected')
 
         # This is a test for rep rate stuff
         self.swbutton1 = tk.Button(master=self.readout_frame, bg='red')

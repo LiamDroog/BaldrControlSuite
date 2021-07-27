@@ -94,16 +94,20 @@ def printProgressBarheader(header):
 
 if __name__ == '__main__':
     import numpy as np
-    data = np.load('Config/DiagnosticConfig.npy', allow_pickle=True)
-    print(data)
+    import matplotlib.pyplot as plt
+    s = np.arange(0.05, 2.05, 0.05)
+    l = len(s)
+    a = []
+    printProgressBar(0, l, prefix='Progress', suffix='Complete')
+    for j, i in enumerate(s):
+        printProgressBar(j+1, l, prefix='Progress', suffix='Complete')
+        st = time.time()
+        time.sleep(i)
+        a.append(time.time() - st)
+    plt.plot(s, a)
+    plt.plot(s, s, 'r')
+    plt.title('Actual delay vs expected dela for windows PC')
+    plt.ylabel('Actual delay, s')
+    plt.xlabel('Expected delay, s')
+    plt.show()
 
-    # with open('Config/ControlConfig.cfg', 'r') as f:
-    #     loadingText = []
-    #     for i in f.readlines():
-    #         loadingText.append(i.rstrip())
-    #     import random
-    #     for i in range(5):
-    #         print(loadingText.pop(random.randint(0, len(loadingText) - 1)))
-    #         for i in range(100):
-    #             time.sleep(random.uniform(0.0001, 0.025))
-    #             printProgressBar(i+1, 100, prefix='Progress')

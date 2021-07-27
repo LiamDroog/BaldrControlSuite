@@ -1,41 +1,23 @@
-# coding=utf-8
-# =============================================================================
-# Copyright (c) 2001-2021 FLIR Systems, Inc. All Rights Reserved.
-#
-# This software is the confidential and proprietary information of FLIR
-# Integrated Imaging Solutions, Inc. ("Confidential Information"). You
-# shall not disclose such Confidential Information and shall use it only in
-# accordance with the terms of the license agreement you entered into
-# with FLIR Integrated Imaging Solutions, Inc. (FLIR).
-#
-# FLIR MAKES NO REPRESENTATIONS OR WARRANTIES ABOUT THE SUITABILITY OF THE
-# SOFTWARE, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-# PURPOSE, OR NON-INFRINGEMENT. FLIR SHALL NOT BE LIABLE FOR ANY DAMAGES
-# SUFFERED BY LICENSEE AS A RESULT OF USING, MODIFYING OR DISTRIBUTING
-# THIS SOFTWARE OR ITS DERIVATIVES.
-# =============================================================================
-#
-#  Trigger_QuickSpin.py shows how to capture images with the
-#  trigger using the QuickSpin API. QuickSpin is a subset of the Spinnaker
-#  library that allows for simpler node access and control.
-#
-#  This example demonstrates how to prepare, execute, and clean up the camera
-#  in regards to using both software and hardware triggers. Retrieving and
-#  setting node values using QuickSpin is the only portion of the example
-#  that differs from Trigger.
-#
-#  A much wider range of topics is covered in the full Spinnaker examples than
-#  in the QuickSpin ones. There are only enough QuickSpin examples to
-#  demonstrate node access and to get started with the API; please see full
-#  Spinnaker examples for further or specific knowledge on a topic.
+"""
+##################################################
+Controls the BFS U3 13Y3 camera. Adapted from
+FLIR provided example code for our use
+##################################################
+# Author:   Liam Droog
+# Email:    droog@ualberta.ca
+# Year:     2021
+# Version:  V.1.0.0
+##################################################
+"""
 
 import PySpin
 import sys
 import time
-
-NUM_IMAGES = 10  # number of images to grab
-
+import keyboard
+import os
+import tkinter as tk
+from tkinter import font
+from PIL import ImageTk, Image
 
 class TriggerType:
     SOFTWARE = 1
@@ -43,10 +25,11 @@ class TriggerType:
 
 
 CHOSEN_TRIGGER = TriggerType.HARDWARE
+global shot_num
 
 
 def configure_trigger(cam):
-    """
+    """1
     This function configures the camera to use a trigger. First, trigger mode is
     ensured to be off in order to select the trigger source. Trigger mode is
     then enabled, which has the camera capture only a single image upon the
@@ -58,12 +41,7 @@ def configure_trigger(cam):
      :rtype: bool
     """
 
-    print('*** CONFIGURING TRIGGER ***\n')
-
-    print(
-        'Note that if the application / user software triggers faster than frame time, the trigger may be dropped / skipped by the camera.\n')
-    print(
-        'If several frames are needed per trigger, a more reliable alternative for such case, is to use the multi-frame mode.\n\n')
+    print('*** CONFIGURING CAMERA ***\n')
 
     if CHOSEN_TRIGGER == TriggerType.SOFTWARE:
         print('Software trigger chosen...')
@@ -163,7 +141,8 @@ def grab_next_image_by_trigger(cam):
     return result
 
 
-def acquire_images(cam):
+def acquire_images(cam, twd):
+    global shot_num
     """
     This function acquires and saves 10 images from a device.
     Please see Acquisition example for more in-depth comments on acquiring images.
@@ -198,15 +177,17 @@ def acquire_images(cam):
 
             print('Device serial number retrieved as %s...' % device_serial_number)
 
+        # get ith number and save
         # Retrieve, convert, and save images
-        for i in range(NUM_IMAGES):
+        while True:
             try:
-
+                if keyboard.is_pressed('esc'):
+                    break
                 #  Retrieve the next image from the trigger
-                result &= grab_next_image_by_trigger(cam)
+                # result &= grab_next_image_by_trigger(cam)
 
                 #  Retrieve next received image
-                image_result = cam.GetNextImage()
+                image_result = cam.GetNextImage(100)
 
                 #  Ensure image completion
                 if image_result.IsIncomplete():
@@ -217,35 +198,38 @@ def acquire_images(cam):
                     #  Print image information
                     width = image_result.GetWidth()
                     height = image_result.GetHeight()
-                    print('Grabbed Image %d, width = %d, height = %d' % (i, width, height))
+                    print('Grabbed Image %d, width = %d, height = %d' % (shot_num, width, height))
 
                     #  Convert image to mono 8
                     image_converted = image_result.Convert(PySpin.PixelFormat_Mono8, PySpin.HQ_LINEAR)
 
                     # Create a unique filename
                     if device_serial_number:
-                        filename = 'Trigger-%s-%d.jpg' % (device_serial_number, i)
+                        filename = os.path.join(twd, 'Shot-%s-%d.bmp' % (device_serial_number, shot_num))
                     else:  # if serial number is empty
-                        filename = 'Trigger-%d.jpg' % i
+                        filename = os.path.join(twd, 'Shot-%d.bmp' % shot_num)
 
                     # Save image
                     image_converted.Save(filename)
-
-                    print('Image saved at %s\n' % filename)
-
-                    #  Release image
-                    image_result.Release()
+                    img = imgViewer(filename)
+                    if not img.accepted:
+                        print('Rejected image')
+                        del img
+                        os.remove(filename)
+                    else:
+                        print('Image saved at %s\n' % filename)
+                        #  Release image
+                        image_result.Release()
+                        shot_num += 1
 
             except PySpin.SpinnakerException as ex:
-                print('Error in acquire_images_loop: %s' % ex)
-                return False
+                pass
 
         # End acquisition
         cam.EndAcquisition()
 
     except PySpin.SpinnakerException as ex:
         print('Error in acquire_images: %s' % ex)
-        return False
 
     return result
 
@@ -314,7 +298,7 @@ def print_device_info(nodemap):
     return result
 
 
-def run_single_camera(cam):
+def run_single_camera(cam, twd):
     """
     This function acts as the body of the example; please see NodeMapInfo example
     for more in-depth comments on setting up cameras.
@@ -344,7 +328,7 @@ def run_single_camera(cam):
             return False
 
         # Acquire images
-        result &= acquire_images(cam)
+        result &= acquire_images(cam, twd)
 
         # Reset trigger
         result &= reset_trigger(cam)
@@ -359,6 +343,22 @@ def run_single_camera(cam):
     return result
 
 
+def set_directory(twd):
+    global shot_num
+    if not os.path.exists(twd):
+        os.mkdir(twd)
+        shot_num = 1
+    else:
+        print('Images Directory found - Parsing for images')
+        if [i for i in os.listdir(twd) if i[-3:] == 'bmp']:
+            present_shots = [int(i[:-4].split('-')[-1]) for i in os.listdir(twd) if i[-3:] == 'bmp']
+            shot_num = max(present_shots)
+        else:
+            shot_num = 1
+
+    print('Shot num: ', shot_num)
+
+
 def main():
     """
     Example entry point; please see Enumeration example for more in-depth
@@ -368,6 +368,10 @@ def main():
     :rtype: bool
     """
     st = time.time()
+
+    owd = os.getcwd()
+    twd = os.path.join(owd, 'Images')
+    set_directory(twd)
     result = True
 
     # Retrieve singleton reference to system object
@@ -386,13 +390,13 @@ def main():
         # Release system instance
         system.ReleaseInstance()
 
-        print('Not enough cameras!')
+        print('Not enough cameras connected!')
         input('Done! Press Enter to exit...')
         return False
 
     # Run example on each camera
-    for i, cam in enumerate(cam_list):
-        result &= run_single_camera(cam)
+    for cam in cam_list:
+        result &= run_single_camera(cam, twd)
 
     # Release reference to camera
     # NOTE: Unlike the C++ examples, we cannot rely on pointer objects being automatically
@@ -405,11 +409,55 @@ def main():
 
     # Release system instance
     system.ReleaseInstance()
-    input('Done! Press Enter to exit...')
+    print('Done!')
     return result
 
 
+class imgViewer:
+    def __init__(self, targetImage):
+        self.window = tk.Tk(className='\Image Viewer Doohickey')
+        font = tk.font.Font(family='Helvetica', size=36, weight='bold')
+        imgFrame(self.window, targetImage, posX=0, posY=0, columnspan=2)
+        self.acceptBtn = tk.Button(master=self.window, text='Accept', command=self.accept, bg='green', font=font)
+        self.acceptBtn.grid(row=2, column=1, sticky='nsew', ipady=25)
+
+        self.rejectBtn = tk.Button(master=self.window, text='Reject', command=self.reject, bg='red', font=font)
+        self.rejectBtn.grid(row=2, column=0, sticky='nsew', ipady=25)
+
+        self.window.protocol("WM_DELETE_WINDOW", self.dontQuit)
+        self.window.mainloop()
+
+    def dontQuit(self):
+        pass
+
+    def accept(self):
+        self.accepted = True
+        self.window.destroy()
+
+    def reject(self):
+        self.accepted = False
+        self.window.destroy()
+
+class imgFrame:
+    def __init__(self, master, targetImage, posX, posY, columnspan=1, rowspan=1):
+        self.window = tk.Frame(master=master)
+        font = tk.font.Font(family='Helvetica', size=36, weight='bold')
+        self.header = tk.Label(master=self.window, text=targetImage.split('\\')[-1], font=font)
+        self.header.grid(row=0, column=0, columnspan=2)
+        # self.imageFrame = tk.Frame(master=self.window)
+        self.image = Image.open(targetImage)
+        factor = 0.75
+        self.image = self.image.resize((int(self.image.size[0]*factor) , int(self.image.size[1]*factor)), Image.ANTIALIAS)
+        self.tkimage = ImageTk.PhotoImage(self.image)
+        self.label = tk.Label(master=self.window, image=self.tkimage)
+        self.label.image = self.tkimage
+        self.label.grid(row=1, column=0, columnspan=2)
+
+        self.window.grid(row=posY, column=posX, columnspan=columnspan, rowspan=rowspan)
+
+
 if __name__ == '__main__':
+    # imgViewer('C:/Users/Liam/PycharmProjects/BaldrControlHub py3.8/Images/Shot-19129388-2.bmp')
     if main():
         sys.exit(0)
     else:
