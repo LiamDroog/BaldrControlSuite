@@ -446,7 +446,7 @@ class imgFrame:
         self.header.grid(row=0, column=0, columnspan=2)
         # self.imageFrame = tk.Frame(master=self.window)
         self.image = Image.open(targetImage)
-        factor = 0.75
+        factor = 0.5
         self.image = self.image.resize((int(self.image.size[0]*factor) , int(self.image.size[1]*factor)), Image.ANTIALIAS)
         self.tkimage = ImageTk.PhotoImage(self.image)
         self.label = tk.Label(master=self.window, image=self.tkimage)
